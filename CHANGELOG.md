@@ -1,3 +1,19 @@
+## [2.8.2](https://github.com/verisoft-ai/appium-wincore-driver/compare/v2.8.1...v2.8.2) (2026-09-06)
+
+### Bug Fixes
+
+* correct boolean UIA attributes and null-root fallback in cached page-source walk ([e58901a](https://github.com/verisoft-ai/appium-wincore-driver/commit/e58901a2e4abdd6fdbbbe347c755a31d964a7c67))
+
+### Performance Improvements
+
+* cut Java/.NET-bridge page source cost with a one-shot dumpTree RPC ([e50cfd0](https://github.com/verisoft-ai/appium-wincore-driver/commit/e50cfd0738e0f9909049af3f2db37523360db05e))
+* halve plain-UIA page source with a per-level cache request ([9645bd8](https://github.com/verisoft-ai/appium-wincore-driver/commit/9645bd814fc1c907d43a56943fa57ceade2f7796))
+* move uia suite to a native-UIA fixture, re-baseline all three suites ([27e65c4](https://github.com/verisoft-ai/appium-wincore-driver/commit/27e65c49d239a278851ab84fd462b2553271ca02))
+
+### Miscellaneous Chores
+
+* rename windows2 -> wincore in docs and test references [skip ci] ([05df564](https://github.com/verisoft-ai/appium-wincore-driver/commit/05df56415406b36d26b2f7fa003dbfbe2d113088))
+
 ## [2.8.1](https://github.com/verisoft-ai/appium-wincore-driver/compare/v2.8.0...v2.8.1) (2026-09-02)
 
 ### Miscellaneous Chores
