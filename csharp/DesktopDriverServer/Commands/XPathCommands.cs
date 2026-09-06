@@ -161,7 +161,8 @@ internal sealed class UiaXmlModel
     {
         object? v;
         try { v = el.GetCachedPropertyValue(pid); } catch { v = null; }
-        if (isBool) return v is int i && i != 0 ? "true" : "false";
+        // UIA hands VT_BOOL properties back as a boxed bool, not int — check bool first.
+        if (isBool) return (v is bool b ? b : v is int i && i != 0) ? "true" : "false";
         return v as string ?? (v is int n ? n.ToString() : "");
     }
 
@@ -201,10 +202,7 @@ internal sealed class UiaXmlModel
             // Cache one level at a time via FindAllBuildCache(Children) — see
             // PageSourceCommands for why a full-subtree cache request is avoided.
             var cachedRoot = root.FindFirstBuildCache(TreeScope.Element, trueCond, req);
-            var rootXml = BuildElementCached(doc, cachedRoot, elements, ref counter, perf, req, trueCond)
-                ?? doc.CreateElement("DummyRoot");
-            doc.AppendChild(rootXml);
-            return new UiaXmlModel(doc, elements);
+            return BuildFromCachedRoot(cachedRoot, perf, req, trueCond);
         }
         catch (Exception ex)
         {
@@ -218,6 +216,32 @@ internal sealed class UiaXmlModel
         var liveRootXml = BuildElementLive(doc, root, liveTrueCond, elements, ref counter, perf)
             ?? doc.CreateElement("DummyRoot");
         doc.AppendChild(liveRootXml);
+        return new UiaXmlModel(doc, elements);
+    }
+
+    /// <summary>
+    /// Builds the model from an already-cached root. Split out of <see cref="Build"/> so
+    /// a null <paramref name="cachedRoot"/> — which <see cref="BuildElementCached"/> would
+    /// otherwise handle by silently materialising a lone "Custom"/"DummyRoot" element (it
+    /// treats every property read defensively so a stale/absent element never crashes
+    /// mid-walk) — instead throws here, where Build's catch is still listening and falls
+    /// back to the live walk.
+    /// </summary>
+    internal static UiaXmlModel BuildFromCachedRoot(
+        IUIAutomationElement? cachedRoot,
+        Diagnostics.PerfCounters? perf,
+        IUIAutomationCacheRequest req,
+        IUIAutomationCondition trueCond)
+    {
+        if (cachedRoot == null)
+            throw new InvalidOperationException("FindFirstBuildCache(root) returned null.");
+
+        var doc = new XmlDocument();
+        var elements = new Dictionary<string, IUIAutomationElement>();
+        int counter = 0;
+        var rootXml = BuildElementCached(doc, cachedRoot, elements, ref counter, perf, req, trueCond)
+            ?? doc.CreateElement("DummyRoot");
+        doc.AppendChild(rootXml);
         return new UiaXmlModel(doc, elements);
     }
 
@@ -376,7 +400,8 @@ internal sealed class UiaXmlModel
     private static string ReadLive(IUIAutomationElement el, int pid, bool isBool)
     {
         var v = el.GetCurrentPropertyValue(pid);
-        if (isBool) return v is int i && i != 0 ? "true" : "false";
+        // UIA hands VT_BOOL properties back as a boxed bool, not int — check bool first.
+        if (isBool) return (v is bool b ? b : v is int i && i != 0) ? "true" : "false";
         return v as string ?? (v is int n ? n.ToString() : "");
     }
 

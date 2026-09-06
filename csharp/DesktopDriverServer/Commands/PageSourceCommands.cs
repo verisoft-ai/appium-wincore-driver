@@ -56,8 +56,7 @@ public static class PageSourceCommands
             // full-subtree cache request instead made the WinForms provider slow AND
             // incomplete.
             var cachedRoot = root.FindFirstBuildCache(TreeScope.Element, trueCond, req);
-            BuildPageSourceCached(cachedRoot, xmlDoc, null, state, cachedRoot, req, trueCond);
-            return xmlDoc.OuterXml;
+            return BuildCachedPageSourceXml(cachedRoot, state, req, trueCond);
         }
         catch (Exception ex)
         {
@@ -66,6 +65,28 @@ public static class PageSourceCommands
         }
 
         BuildPageSource(root, xmlDoc, null, state, root);
+        return xmlDoc.OuterXml;
+    }
+
+    /// <summary>
+    /// Builds the page-source XML from an already-cached root. Split out of
+    /// <see cref="GetPageSource"/> so a null <paramref name="cachedRoot"/> — which
+    /// <see cref="BuildPageSourceCached"/> would otherwise handle by silently emitting a
+    /// single bogus "Unknown" element (it treats every property read defensively so a
+    /// stale/absent element never crashes mid-walk) — instead throws here, where
+    /// GetPageSource's catch is still listening and falls back to the live walk.
+    /// </summary>
+    internal static string BuildCachedPageSourceXml(
+        IUIAutomationElement? cachedRoot,
+        SessionState state,
+        IUIAutomationCacheRequest req,
+        IUIAutomationCondition trueCond)
+    {
+        if (cachedRoot == null)
+            throw new InvalidOperationException("FindFirstBuildCache(root) returned null.");
+
+        var xmlDoc = new XmlDocument();
+        BuildPageSourceCached(cachedRoot, xmlDoc, null, state, cachedRoot, req, trueCond);
         return xmlDoc.OuterXml;
     }
 
@@ -106,8 +127,9 @@ public static class PageSourceCommands
     private static string CStr(IUIAutomationElement el, int pid)
         => CVal(el, pid) as string ?? "";
 
+    // UIA hands VT_BOOL properties back as a boxed bool, not int — check bool first.
     private static bool CBool(IUIAutomationElement el, int pid)
-        => CVal(el, pid) is int i && i != 0;
+        => CVal(el, pid) switch { bool b => b, int i => i != 0, _ => false };
 
     private static void BuildPageSourceCached(
         IUIAutomationElement element,
