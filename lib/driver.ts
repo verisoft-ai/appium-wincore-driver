@@ -67,14 +67,11 @@ const CHROMEDRIVER_NO_PROXY: RouteMatcher[] = [
     ['POST', new RegExp('^/session/[^/]+/execute$')],
     ['POST', new RegExp('^/session/[^/]+/execute/sync')],
 
-    // MJSONWP commands
-    ['GET', new RegExp('^/session/[^/]+/log/types$')],
-    ['POST', new RegExp('^/session/[^/]+/log$')],
-    // W3C commands
-    // For Selenium v4 (W3C does not have this route)
-    ['GET', new RegExp('^/session/[^/]+/se/log/types$')],
-    // For Selenium v4 (W3C does not have this route)
-    ['POST', new RegExp('^/session/[^/]+/se/log$')],
+    // NOTE: the log routes (/log, /log/types, /se/log, /se/log/types) are intentionally
+    // NOT listed here. The upstream Appium driver template excludes them so the base
+    // driver can serve its own server/device logs, but this driver has no getLog
+    // implementation — keeping the exclusion just made manage().logs() fail in every
+    // context. Letting them proxy means logs work while a WEBVIEW_* context is active.
 ];
 
 export class AppiumDesktopDriver extends BaseDriver<DesktopDriverConstraints, StringRecord> {
