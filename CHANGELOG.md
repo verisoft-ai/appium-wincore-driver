@@ -1,3 +1,9 @@
+## [2.8.3](https://github.com/verisoft-ai/appium-wincore-driver/compare/v2.8.2...v2.8.3) (2026-09-08)
+
+### Bug Fixes
+
+* remove logs from CHOMRE_DRIVER_NO_PROXY list ([b2ae60f](https://github.com/verisoft-ai/appium-wincore-driver/commit/b2ae60fc407487de7e21f367ab2f80acf2bb0e28))
+
 ## [2.8.2](https://github.com/verisoft-ai/appium-wincore-driver/compare/v2.8.1...v2.8.2) (2026-09-06)
 
 ### Bug Fixes
