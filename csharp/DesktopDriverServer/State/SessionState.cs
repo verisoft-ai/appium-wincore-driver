@@ -1,6 +1,7 @@
 using DesktopDriverServer.Diagnostics;
 using DesktopDriverServer.DotNet;
 using DesktopDriverServer.Java;
+using DesktopDriverServer.Sap;
 using DesktopDriverServer.Uia3;
 
 namespace DesktopDriverServer.State;
@@ -31,6 +32,9 @@ public class SessionState
     internal BridgeAgentService? DotNetBridge { get; private set; }
     public bool DotNetBridgeEnabled { get; private set; }
     public int DotNetBridgeTargetPid { get; private set; }
+
+    // SAP GUI Scripting (in-process COM, no injection)
+    internal SapGuiClient? Sap { get; private set; }
 
     // HWND of the attached top-level window (0 if the root is the desktop or
     // an element with no native handle). We re-resolve the root via
@@ -154,6 +158,23 @@ public class SessionState
     }
 
     /// <summary>
+    /// Creates (once) the in-process SAP GUI scripting client. Unlike the Java/.NET
+    /// bridges there is nothing to inject — the scripting engine already runs inside
+    /// saplogon.exe. Actual binding happens in <see cref="SapGuiClient.Attach"/>.
+    /// </summary>
+    internal SapGuiClient EnableSap()
+    {
+        Sap ??= new SapGuiClient();
+        return Sap;
+    }
+
+    internal void DisableSap()
+    {
+        Sap?.Dispose();
+        Sap = null;
+    }
+
+    /// <summary>
     /// Returns true if the given UIA element's HWND is a Java window.
     /// Uses WinAPI GetClassName — no JAB DLL required.
     /// </summary>
@@ -213,5 +234,7 @@ public class SessionState
         Java = null;
         JavaSwingEnabled = false;
         LastStartedProcessId = 0;
+        Sap?.Dispose();
+        Sap = null;
     }
 }

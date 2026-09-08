@@ -102,6 +102,24 @@ public class CommandDispatcher
             ["enableDotnetBridge"] = DotNetBridgeCommands.EnableDotnetBridge,
             ["injectDotnetBridge"] = DotNetBridgeCommands.InjectDotnetBridge,
 
+            // SAP GUI Scripting
+            ["sap.attach"] = SapCommands.Attach,
+            ["sap.detach"] = SapCommands.Detach,
+            ["sap.status"] = SapCommands.Status,
+            ["sap.pageSource"] = SapCommands.PageSource,
+            ["sap.dumpTree"] = SapCommands.DumpTree,
+            ["sap.findElement"] = SapCommands.FindElement,
+            ["sap.evaluateXPath"] = SapCommands.EvaluateXPath,
+            ["sap.getProperty"] = SapCommands.GetProperty,
+            ["sap.getText"] = SapCommands.GetText,
+            ["sap.getTagName"] = SapCommands.GetTagName,
+            ["sap.getRect"] = SapCommands.GetRect,
+            ["sap.setValue"] = SapCommands.SetValue,
+            ["sap.invoke"] = SapCommands.Invoke,
+            ["sap.setFocus"] = SapCommands.SetFocus,
+            ["sap.select"] = SapCommands.Select,
+            ["sap.sendVKey"] = SapCommands.SendVKey,
+
             // Diagnostics
             ["getPerfMetrics"] = PerfCommands.GetPerfMetrics,
             ["resetPerfMetrics"] = PerfCommands.ResetPerfMetrics,
