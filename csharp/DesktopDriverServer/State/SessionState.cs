@@ -1,11 +1,13 @@
 using DesktopDriverServer.Diagnostics;
 using DesktopDriverServer.DotNet;
 using DesktopDriverServer.Java;
+using DesktopDriverServer.Plugins;
 using DesktopDriverServer.Uia3;
+using Wincore.ServerSdk;
 
 namespace DesktopDriverServer.State;
 
-public class SessionState
+public class SessionState : ISessionContext
 {
     // One CUIAutomation instance per session. COM reference-counted by the CLR.
     // All IUIAutomationElement / IUIAutomationCondition instances we create go
@@ -21,6 +23,27 @@ public class SessionState
     // Always allocated (cheap); only written to when PerfMetricsEnabled is true.
     public bool PerfMetricsEnabled { get; set; }
     public PerfCounters Perf { get; } = new();
+
+    /// <summary>Tree providers contributed by loaded plugins (Java agent, .NET bridge, …).</summary>
+    public ProviderRegistry Providers { get; } = new();
+
+    // ── ISessionContext (the narrowed view handed to plugins / their providers) ──
+
+    IntPtr ISessionContext.GetLiveRootHandle() => RootNativeWindowHandle;
+
+    string ISessionContext.GetLiveRootName()
+    {
+        try { return GetLiveRoot()?.get_CurrentName() ?? ""; }
+        catch { return ""; }
+    }
+
+    bool ISessionContext.PerfEnabled => PerfMetricsEnabled;
+
+    IPerfSink ISessionContext.Perf => PerfMetricsEnabled ? Perf : NullPerfSink.Instance;
+
+    void ISessionContext.LogInfo(string message) => Console.Error.WriteLine(message);
+
+    void ISessionContext.LogError(string message) => Console.Error.WriteLine(message);
 
     // Java agent
     internal JavaAgentService? Java { get; private set; }
@@ -209,6 +232,7 @@ public class SessionState
         SetRoot(null);
         CacheRequest = null;
         TreeWalker = null;
+        Providers.Dispose();
         Java?.Dispose();
         Java = null;
         JavaSwingEnabled = false;

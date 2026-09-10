@@ -13,7 +13,7 @@ namespace DesktopDriverServer.Diagnostics;
 /// callers guard on <see cref="SessionState.PerfMetricsEnabled"/> before touching a
 /// stopwatch so the hot path stays free.</para>
 /// </summary>
-public sealed class PerfCounters
+public sealed class PerfCounters : Wincore.ServerSdk.IPerfSink
 {
     public sealed record Counter(long Count, double TotalMs);
 
