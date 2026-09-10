@@ -1,5 +1,5 @@
 import type { ExecuteMethodMap } from '@appium/types';
-import type { AppiumDesktopDriver } from './driver';
+import type { AppiumWincoreDriver } from './driver';
 
 /**
  * Standard Appium execute-method descriptors for the `windows:` commands, so they're
@@ -7,7 +7,7 @@ import type { AppiumDesktopDriver } from './driver';
  * Kept alongside (not replacing) the legacy `windows:` + `EXTENSION_COMMANDS` dispatch
  * in `lib/commands/extension.ts` for backwards compatibility.
  */
-export const executeMethodMap: ExecuteMethodMap<AppiumDesktopDriver> = {
+export const executeMethodMap: ExecuteMethodMap<AppiumWincoreDriver> = {
     'windows: cacheRequest': {
         command: 'emCacheRequest',
         params: { optional: ['treeScope', 'treeFilter', 'automationElementMode'] },

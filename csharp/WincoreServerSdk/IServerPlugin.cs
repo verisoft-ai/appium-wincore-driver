@@ -10,8 +10,8 @@ namespace Wincore.ServerSdk;
 public delegate object? PluginCommandHandler(ISessionContext context, JsonElement? parameters);
 
 /// <summary>
-/// Entry point of a DesktopDriverServer plugin. Discovered by <c>PluginLoader</c>
-/// from a folder on <c>DESKTOP_DRIVER_PLUGINS</c>; the loader instantiates the type
+/// Entry point of a WincoreServer plugin. Discovered by <c>PluginLoader</c>
+/// from a folder on <c>WINCORE_SERVER_PLUGINS</c>; the loader instantiates the type
 /// named in the folder's <c>plugin.json</c> and calls this once at server start.
 /// </summary>
 public interface IServerPlugin

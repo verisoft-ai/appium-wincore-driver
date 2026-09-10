@@ -38,7 +38,7 @@ describe('.NET Bridge — WPF DataGrid with a UIA-blind templated column', () =>
             ...APPIUM_SERVER,
             capabilities: {
                 platformName: 'Windows',
-                'appium:automationName': 'DesktopDriver',
+                'appium:automationName': 'Wincore',
                 'appium:appTopLevelWindow': launched.hwnd,
                 'appium:shouldCloseApp': false,
             } as WebdriverIO.Capabilities,

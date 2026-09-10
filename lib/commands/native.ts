@@ -1,6 +1,6 @@
 import { W3C_ELEMENT_KEY } from 'appium/driver';
 import { Element } from '@appium/types';
-import { AppiumDesktopDriver } from '../driver';
+import { AppiumWincoreDriver } from '../driver';
 
 export type AccessibleNode = {
     name: string | null;
@@ -34,7 +34,7 @@ export type AccessibleChildrenResult =
  * @returns The MSAA accessible tree rooted at the element, or `{ supported: false }` if the
  * element exposes no IAccessible implementation.
  */
-export async function executeGetNativeChildren(this: AppiumDesktopDriver, element: Element): Promise<AccessibleChildrenResult> {
+export async function executeGetNativeChildren(this: AppiumWincoreDriver, element: Element): Promise<AccessibleChildrenResult> {
     const elementId = element[W3C_ELEMENT_KEY];
     return await this.sendCommand('getAccessibleChildren', { elementId }) as AccessibleChildrenResult;
 }

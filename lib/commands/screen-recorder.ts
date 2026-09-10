@@ -2,7 +2,7 @@ import { fs, net, util } from 'appium/support';
 import { waitForCondition } from 'asyncbox';
 import { spawn, ChildProcessWithoutNullStreams } from 'node:child_process';
 import { getBundledFfmpegPath } from '../util';
-import { AppiumDesktopDriver } from '../driver';
+import { AppiumWincoreDriver } from '../driver';
 
 const RETRY_PAUSE = 300;
 const RETRY_TIMEOUT = 5000;
@@ -32,7 +32,7 @@ export interface UploadOptions {
     formFields?: Array<[string, string]> | Record<string, string>;
 }
 
-async function requireFfmpegPath(driver: AppiumDesktopDriver): Promise<string> {
+async function requireFfmpegPath(driver: AppiumWincoreDriver): Promise<string> {
     const bundled = await getBundledFfmpegPath(driver);
     if (bundled) {
         return bundled;
@@ -79,7 +79,7 @@ export async function uploadRecordedMedia(
 }
 
 export class ScreenRecorder {
-    private _driver: AppiumDesktopDriver;
+    private _driver: AppiumWincoreDriver;
     private _videoPath: string;
     private _process: ChildProcessWithoutNullStreams | null = null;
     private _fps: number;
@@ -95,7 +95,7 @@ export class ScreenRecorder {
      * @param driver - The owning driver instance, used for logging.
      * @param opts - Recording options (fps, time limit, encoder preset, cursor/click capture, etc).
      */
-    constructor(videoPath: string, driver: AppiumDesktopDriver, opts: ScreenRecorderOptions = {}) {
+    constructor(videoPath: string, driver: AppiumWincoreDriver, opts: ScreenRecorderOptions = {}) {
         this._driver = driver;
         this._videoPath = videoPath;
         this._fps = opts.fps && opts.fps > 0 ? opts.fps : DEFAULT_FPS;

@@ -39,7 +39,7 @@ describe('.NET Bridge — 32-bit target support', () => {
             ...APPIUM_SERVER,
             capabilities: {
                 platformName: 'Windows',
-                'appium:automationName': 'DesktopDriver',
+                'appium:automationName': 'Wincore',
                 'appium:appTopLevelWindow': launched.hwnd,
                 'appium:shouldCloseApp': false,
             } as WebdriverIO.Capabilities,

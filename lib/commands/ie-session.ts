@@ -1,4 +1,4 @@
-import { AppiumDesktopDriver } from '../driver';
+import { AppiumWincoreDriver } from '../driver';
 import { IESession, registerIESession, deleteIESession } from '../ie/session';
 import { isIEWindowHwnd } from '../winapi/user32';
 
@@ -11,7 +11,7 @@ export { isIEWindowHwnd };
  * @returns Resolves once IE mode is enabled.
  */
 export async function enableIEMode(
-    this: AppiumDesktopDriver, hwnd: number,
+    this: AppiumWincoreDriver, hwnd: number,
 ): Promise<void> {
     this.log.info(`IE HWND 0x${hwnd.toString(16).padStart(8, '0')}`);
 
@@ -34,7 +34,7 @@ export async function enableIEMode(
  * Switches the driver back to plain UIA commands, leaving any existing IE session intact.
  * @returns Nothing.
  */
-export function disableIEMode(this: AppiumDesktopDriver): void {
+export function disableIEMode(this: AppiumWincoreDriver): void {
     this.ieContext = false;
     this.log.info('IE mode disabled — back to UIA.');
 }
@@ -43,7 +43,7 @@ export function disableIEMode(this: AppiumDesktopDriver): void {
  * Tears down the current IE session bridge entirely and clears IE-related session state.
  * @returns Resolves once the IE session has been terminated.
  */
-export async function terminateIEMode(this: AppiumDesktopDriver): Promise<void> {
+export async function terminateIEMode(this: AppiumWincoreDriver): Promise<void> {
     this.ieContext = false;
     if (this.sessionId) { deleteIESession(this.sessionId); }
     this.ieSession = null;

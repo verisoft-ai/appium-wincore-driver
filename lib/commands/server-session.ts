@@ -1,6 +1,6 @@
 import { normalize } from 'node:path';
-import { AppiumDesktopDriver } from '../driver';
-import { DesktopDriverServerClient } from '../server/client';
+import { AppiumWincoreDriver } from '../driver';
+import { WincoreServerClient } from '../server/client';
 import { findFreePort } from '../util';
 import { getAllWindowHandles, getWindowAllHandlesForProcessIds, isIEWindowHwnd, trySetForegroundWindow } from '../winapi/user32';
 
@@ -16,7 +16,7 @@ const WEBVIEW_DEVTOOLS_PORT_UPPER = 11000;
  * when possible). Also enables WebView2 CDP remote debugging if `webviewEnabled` is set.
  * @returns Resolves once the server has started and the root element has been established.
  */
-export async function startServerSession(this: AppiumDesktopDriver): Promise<void> {
+export async function startServerSession(this: AppiumWincoreDriver): Promise<void> {
     // Build a per-session env overlay rather than mutating process.env, which
     // is global across all sessions in the Appium server process.
     let serverEnv: NodeJS.ProcessEnv | undefined;
@@ -41,7 +41,7 @@ export async function startServerSession(this: AppiumDesktopDriver): Promise<voi
     // a .NET type initializer fails it stays broken for the process lifetime.
     // The only recovery is to restart the server process and try again.
     for (let attempt = 1; attempt <= MAX_INIT_RETRIES; attempt++) {
-        this.serverClient = new DesktopDriverServerClient(this.log);
+        this.serverClient = new WincoreServerClient(this.log);
         await this.serverClient.start(undefined, serverEnv);
 
         try {
@@ -130,7 +130,7 @@ export async function startServerSession(this: AppiumDesktopDriver): Promise<voi
  * @param appPath - The app path or UWP app user model id from the `app` capability.
  * @returns True if successfully attached, false if no running process was found.
  */
-export async function tryAttachToRunningApp(this: AppiumDesktopDriver, appPath: string): Promise<boolean> {
+export async function tryAttachToRunningApp(this: AppiumWincoreDriver, appPath: string): Promise<boolean> {
     const isUwp = appPath.includes('!') && appPath.includes('_') && !(appPath.includes('/') || appPath.includes('\\'));
 
     try {
@@ -174,13 +174,13 @@ export async function tryAttachToRunningApp(this: AppiumDesktopDriver, appPath: 
  * Disposes the C# UI Automation server process for this session, if one is running.
  * @returns Resolves once the server process has been terminated.
  */
-export async function terminateServerSession(this: AppiumDesktopDriver): Promise<void> {
+export async function terminateServerSession(this: AppiumWincoreDriver): Promise<void> {
     if (!this.serverClient) {
         return;
     }
 
-    this.log.debug(`Terminating DesktopDriverServer session...`);
+    this.log.debug(`Terminating WincoreServer session...`);
     await this.serverClient.dispose();
     this.serverClient = undefined;
-    this.log.debug(`DesktopDriverServer session terminated successfully.`);
+    this.log.debug(`WincoreServer session terminated successfully.`);
 }

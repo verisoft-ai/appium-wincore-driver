@@ -4,10 +4,10 @@ import { system } from 'appium/support';
 import type { ScreenRecorder } from './commands/screen-recorder';
 import commands from './commands';
 import {
-    DesktopDriverConstraints,
+    WincoreDriverConstraints,
     UI_AUTOMATION_DRIVER_CONSTRAINTS
 } from './constraints';
-import { DesktopDriverServerClient } from './server/client';
+import { WincoreServerClient } from './server/client';
 import { attachLogFileMirror, LogFileMirror } from './log-file';
 import { DRIVER_VERSION } from './version';
 import { executeMethodMap } from './execute-method-map';
@@ -30,8 +30,8 @@ import type {
     W3CDriverCaps
 } from '@appium/types';
 
-type W3CDesktopDriverCaps = W3CDriverCaps<DesktopDriverConstraints>;
-type DefaultWindowsCreateSessionResult = DefaultCreateSessionResult<DesktopDriverConstraints>;
+type W3CWincoreDriverCaps = W3CDriverCaps<WincoreDriverConstraints>;
+type DefaultWindowsCreateSessionResult = DefaultCreateSessionResult<WincoreDriverConstraints>;
 
 type KeyboardState = {
     pressed: Set<string>,
@@ -73,10 +73,10 @@ const CHROMEDRIVER_NO_PROXY: RouteMatcher[] = [
     // context. Letting them proxy means logs work while a WEBVIEW_* context is active.
 ];
 
-export class AppiumDesktopDriver extends BaseDriver<DesktopDriverConstraints, StringRecord> {
+export class AppiumWincoreDriver extends BaseDriver<WincoreDriverConstraints, StringRecord> {
     static executeMethodMap = executeMethodMap;
 
-    serverClient?: DesktopDriverServerClient;
+    serverClient?: WincoreServerClient;
     mouseButtonsDown: Set<number> = new Set();
     keyboardState: KeyboardState = {
         pressed: new Set(),
@@ -113,7 +113,7 @@ export class AppiumDesktopDriver extends BaseDriver<DesktopDriverConstraints, St
 
     async sendCommand(method: string, params: Record<string, unknown> = {}): Promise<unknown> {
         if (!this.serverClient) {
-            throw new errors.UnknownError('DesktopDriverServer is not running.');
+            throw new errors.UnknownError('WincoreServer is not running.');
         }
         return await this.serverClient.sendCommand(method, params);
     }
@@ -179,9 +179,9 @@ export class AppiumDesktopDriver extends BaseDriver<DesktopDriverConstraints, St
     }
 
     override async createSession(
-        jwpCaps: W3CDesktopDriverCaps,
-        reqCaps?: W3CDesktopDriverCaps,
-        w3cCaps?: W3CDesktopDriverCaps,
+        jwpCaps: W3CWincoreDriverCaps,
+        reqCaps?: W3CWincoreDriverCaps,
+        w3cCaps?: W3CWincoreDriverCaps,
         driverData?: DriverData[]
     ): Promise<DefaultWindowsCreateSessionResult> {
         if (!system.isWindows()) {
@@ -209,7 +209,7 @@ export class AppiumDesktopDriver extends BaseDriver<DesktopDriverConstraints, St
         }
 
         try {
-            this.log.debug('Creating AppiumDesktop driver session...');
+            this.log.debug('Creating AppiumWincore driver session...');
             const [sessionId, caps] = await super.createSession(jwpCaps, reqCaps, w3cCaps, driverData);
             if (caps.logFile !== undefined && caps.logFile !== false) {
                 try {
@@ -235,7 +235,7 @@ export class AppiumDesktopDriver extends BaseDriver<DesktopDriverConstraints, St
             }
 
             if (this.caps.systemPort) {
-                this.log.info(`systemPort capability (${this.caps.systemPort}) is ignored. AppiumDesktopDriver uses stdin/stdout IPC.`);
+                this.log.info(`systemPort capability (${this.caps.systemPort}) is ignored. AppiumWincoreDriver uses stdin/stdout IPC.`);
             }
 
             // UIA server always starts. IEDriverServer starts lazily on first IE window switch.
@@ -264,7 +264,7 @@ export class AppiumDesktopDriver extends BaseDriver<DesktopDriverConstraints, St
     }
 
     override async deleteSession(sessionId?: string | null | undefined): Promise<void> {
-        this.log.debug('Deleting AppiumDesktop driver session...');
+        this.log.debug('Deleting AppiumWincore driver session...');
 
         if (this.ieSession) {
             try {

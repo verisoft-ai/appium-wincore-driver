@@ -24,22 +24,22 @@ This is an **Appium driver** for Windows desktop UI automation, exposed via the 
 
 ### Core driver flow
 
-`lib/driver.ts` — `AppiumDesktopDriver` extends `BaseDriver`. On `createSession()`, it spawns **`DesktopDriverServer.exe`** (`lib/server/client.ts`) — a persistent .NET process that remains open for the session lifetime. Its source lives in this repo at `csharp/DesktopDriverServer/` (command handlers under `Commands/`); `native/win-x64/DesktopDriverServer.exe` is just the build output, not a vendored/external binary. All UI Automation operations are sent to this process as newline-delimited JSON requests over stdin/stdout (`lib/server/protocol.ts`: `{id, method, params}` → `{id, result|error, duration_ms}`), resolved by request id. `DesktopDriverServer.exe` handles far more than tree navigation — process lifecycle (`startProcess`/`stopProcess`/window move/resize), clipboard, screenshots, file ops, and PowerShell execution (`executePowerShellScript`) all dispatch through it too; there is no persistent PowerShell session on the Node side. The one channel that bypasses this process entirely is raw input synthesis: `lib/winapi/user32.ts` loads `user32.dll`/`kernel32.dll` directly via the `koffi` FFI library and calls `SendInput`/`SetCursorPos`/etc. straight from Node.
+`lib/driver.ts` — `AppiumWincoreDriver` extends `BaseDriver`. On `createSession()`, it spawns **`WincoreServer.exe`** (`lib/server/client.ts`) — a persistent .NET process that remains open for the session lifetime. Its source lives in this repo at `csharp/WincoreServer/` (command handlers under `Commands/`); `native/win-x64/WincoreServer.exe` is just the build output, not a vendored/external binary. All UI Automation operations are sent to this process as newline-delimited JSON requests over stdin/stdout (`lib/server/protocol.ts`: `{id, method, params}` → `{id, result|error, duration_ms}`), resolved by request id. `WincoreServer.exe` handles far more than tree navigation — process lifecycle (`startProcess`/`stopProcess`/window move/resize), clipboard, screenshots, file ops, and PowerShell execution (`executePowerShellScript`) all dispatch through it too; there is no persistent PowerShell session on the Node side. The one channel that bypasses this process entirely is raw input synthesis: `lib/winapi/user32.ts` loads `user32.dll`/`kernel32.dll` directly via the `koffi` FFI library and calls `SendInput`/`SetCursorPos`/etc. straight from Node.
 
 ### Server plugins (tree providers)
 
-`DesktopDriverServer.exe` loads external .NET plugins at startup from directories on the
-`DESKTOP_DRIVER_PLUGINS` environment variable (`;`-separated; set by an installed
+`WincoreServer.exe` loads external .NET plugins at startup from directories on the
+`WINCORE_SERVER_PLUGINS` environment variable (`;`-separated; set by an installed
 `appium-wincore-*` Appium plugin before the server spawns). Each plugin folder has a
 `plugin.json` manifest + assembly implementing `IServerPlugin` (`csharp/WincoreServerSdk/`,
 the published plugin contract): it contributes JSON-RPC command handlers and one
 `ITreeProvider` — a source of elements outside the real UIA tree, addressed by an element-id
 prefix (`java:`, `dotnet:`). Command handlers in `Commands/` route to a provider via
 `state.Providers.TryResolve(elementId)` / `TryResolveWindow(hwnd)` — no bridge-specific
-branching. Loader + registry live in `csharp/DesktopDriverServer/Plugins/`.
+branching. Loader + registry live in `csharp/WincoreServer/Plugins/`.
 
 The core server ships **no** built-in providers. Both bridges are their own repo + Appium
-plugin, loaded via `DESKTOP_DRIVER_PLUGINS`:
+plugin, loaded via `WINCORE_SERVER_PLUGINS`:
 [appium-wincore-java-bridge](https://github.com/y-schwab/appium-wincore-java-bridge) (JAB /
 Swing, `windows: attachJavaSwing`) and
 [appium-wincore-dotnet-bridge](https://github.com/y-schwab/appium-wincore-dotnet-bridge)
@@ -48,7 +48,7 @@ bridge capabilities.
 
 ### Element finding
 
-Appium locator strategies (XPath, accessibility id, class name, etc.) are converted into `ConditionDto` JSON objects (`lib/server/protocol.ts`, built via `lib/server/conditions.ts` and `lib/server/converter-bridge.ts`) and sent to `DesktopDriverServer.exe`, which reconstructs real `UIA3` `Condition` objects natively in .NET and runs `FindFirst`/`FindAll` against the live tree. `lib/powershell/` (`conditions.ts`, `converter.ts`) is legacy naming kept for the `-windows uiautomation` locator converter and XPath plumbing — it no longer executes PowerShell scripts; `converter-bridge.ts` bridges its PSObject-shaped `Condition` classes into `ConditionDto`s for the server. XPath is evaluated in the runtime that owns the tree via the `evaluateXPath` RPC: `DesktopDriverServer.exe` materialises the UIA subtree (bridged apps: their reflected / AccessibleContext subtree) into an `XmlDocument` and runs the whole expression through `System.Xml.XPath`, returning element-table ids in document order. `lib/xpath/` is a ~50-line client shim — see `csharp/DesktopDriverServer/Commands/XPathCommands.cs` + `XPathEvaluator.cs`. As a fallback for legacy controls with no UIA children (old ActiveX/hand-rolled Win32 grids), `lib/commands/native.ts` walks the raw `IAccessible` (MSAA) tree instead — dispatched over the same JSON protocol.
+Appium locator strategies (XPath, accessibility id, class name, etc.) are converted into `ConditionDto` JSON objects (`lib/server/protocol.ts`, built via `lib/server/conditions.ts` and `lib/server/converter-bridge.ts`) and sent to `WincoreServer.exe`, which reconstructs real `UIA3` `Condition` objects natively in .NET and runs `FindFirst`/`FindAll` against the live tree. `lib/powershell/` (`conditions.ts`, `converter.ts`) is legacy naming kept for the `-windows uiautomation` locator converter and XPath plumbing — it no longer executes PowerShell scripts; `converter-bridge.ts` bridges its PSObject-shaped `Condition` classes into `ConditionDto`s for the server. XPath is evaluated in the runtime that owns the tree via the `evaluateXPath` RPC: `WincoreServer.exe` materialises the UIA subtree (bridged apps: their reflected / AccessibleContext subtree) into an `XmlDocument` and runs the whole expression through `System.Xml.XPath`, returning element-table ids in document order. `lib/xpath/` is a ~50-line client shim — see `csharp/WincoreServer/Commands/XPathCommands.cs` + `XPathEvaluator.cs`. As a fallback for legacy controls with no UIA children (old ActiveX/hand-rolled Win32 grids), `lib/commands/native.ts` walks the raw `IAccessible` (MSAA) tree instead — dispatched over the same JSON protocol.
 
 ### Input simulation
 
@@ -72,7 +72,7 @@ All driver commands live in `lib/commands/` and are mixed into the driver class 
 
 ## Key capabilities
 
-- `platformName`: `"Windows"`, `automationName`: `"DesktopDriver"`
+- `platformName`: `"Windows"`, `automationName`: `"Wincore"`
 - Supported locator strategies: `xpath`, `accessibility id`, `id`, `name`, `class name`, `tag name`, `-windows uiautomation`
 - Custom `executeScript()` commands listed in README.md
 - Prerun/postrun PowerShell scripts via session capabilities

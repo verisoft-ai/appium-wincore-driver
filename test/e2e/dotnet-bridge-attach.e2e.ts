@@ -119,7 +119,7 @@ describe('.NET Bridge — windows: attachDotnetBridge post-session', () => {
             ...APPIUM_SERVER,
             capabilities: {
                 platformName: 'Windows',
-                'appium:automationName': 'DesktopDriver',
+                'appium:automationName': 'Wincore',
                 'appium:appTopLevelWindow': launched.hwnd,
                 'appium:shouldCloseApp': false,
             } as WebdriverIO.Capabilities,
@@ -167,7 +167,7 @@ describe('.NET Bridge — root session, launch external, switchToWindow, then at
             ...APPIUM_SERVER,
             capabilities: {
                 platformName: 'Windows',
-                'appium:automationName': 'DesktopDriver',
+                'appium:automationName': 'Wincore',
                 'appium:app': 'Root',
                 'appium:shouldCloseApp': false,
             } as WebdriverIO.Capabilities,
@@ -206,7 +206,7 @@ describe('.NET Bridge — error cases', () => {
             ...APPIUM_SERVER,
             capabilities: {
                 platformName: 'Windows',
-                'appium:automationName': 'DesktopDriver',
+                'appium:automationName': 'Wincore',
                 'appium:app': 'root',
             } as WebdriverIO.Capabilities,
         });
@@ -224,7 +224,7 @@ describe('.NET Bridge — error cases', () => {
             ...APPIUM_SERVER,
             capabilities: {
                 platformName: 'Windows',
-                'appium:automationName': 'DesktopDriver',
+                'appium:automationName': 'Wincore',
                 'appium:app': NOTEPAD_APP_PATH,
             } as WebdriverIO.Capabilities,
         });

@@ -34,7 +34,7 @@ describe('.NET Bridge — minimal owner-draw fixture, minimum requirement', () =
             ...APPIUM_SERVER,
             capabilities: {
                 platformName: 'Windows',
-                'appium:automationName': 'DesktopDriver',
+                'appium:automationName': 'Wincore',
                 'appium:appTopLevelWindow': launched.hwnd,
                 'appium:shouldCloseApp': false,
             } as WebdriverIO.Capabilities,

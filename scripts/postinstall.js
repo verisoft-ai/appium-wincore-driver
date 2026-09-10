@@ -2,7 +2,7 @@
  * Postinstall hook for appium-wincore-driver.
  *
  * When end users install the published npm package, the prebuilt
- * `native/win-x64/DesktopDriverServer.exe` is already bundled —
+ * `native/win-x64/WincoreServer.exe` is already bundled —
  * no native build is needed, and users do not need the .NET SDK.
  *
  * When developers install from a git checkout (no prebuilt exe),
@@ -14,10 +14,10 @@ const { existsSync } = require('node:fs');
 const { join } = require('node:path');
 const { execSync } = require('node:child_process');
 
-const prebuiltExe = join(__dirname, '..', 'native', 'win-x64', 'DesktopDriverServer.exe');
+const prebuiltExe = join(__dirname, '..', 'native', 'win-x64', 'WincoreServer.exe');
 
 if (existsSync(prebuiltExe)) {
-    console.log('[postinstall] Prebuilt DesktopDriverServer.exe found — skipping native build.');
+    console.log('[postinstall] Prebuilt WincoreServer.exe found — skipping native build.');
     process.exit(0);
 }
 

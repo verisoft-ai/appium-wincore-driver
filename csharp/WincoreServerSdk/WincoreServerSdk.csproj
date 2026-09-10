@@ -15,7 +15,7 @@
          whose declared SdkVersion has a different major. -->
     <Version>1.0.0</Version>
     <PackageId>WincoreServerSdk</PackageId>
-    <Description>Plugin contract for DesktopDriverServer (appium-wincore-driver): ITreeProvider, IServerPlugin, and the shared locator/xpath types a server plugin compiles against.</Description>
+    <Description>Plugin contract for WincoreServer (appium-wincore-driver): ITreeProvider, IServerPlugin, and the shared locator/xpath types a server plugin compiles against.</Description>
     <Authors>Automate The Planet</Authors>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <IncludeSymbols>true</IncludeSymbols>

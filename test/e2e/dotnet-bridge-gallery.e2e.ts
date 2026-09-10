@@ -31,7 +31,7 @@ describe('.NET Bridge — ownerdraw gallery, full element coverage', () => {
             ...APPIUM_SERVER,
             capabilities: {
                 platformName: 'Windows',
-                'appium:automationName': 'DesktopDriver',
+                'appium:automationName': 'Wincore',
                 'appium:appTopLevelWindow': launched.hwnd,
                 'appium:shouldCloseApp': false,
             } as WebdriverIO.Capabilities,

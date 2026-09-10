@@ -83,4 +83,4 @@ export const UI_AUTOMATION_DRIVER_CONSTRAINTS = {
 
 export default UI_AUTOMATION_DRIVER_CONSTRAINTS;
 
-export type DesktopDriverConstraints = typeof UI_AUTOMATION_DRIVER_CONSTRAINTS;
+export type WincoreDriverConstraints = typeof UI_AUTOMATION_DRIVER_CONSTRAINTS;

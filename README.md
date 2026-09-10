@@ -23,7 +23,7 @@ appium driver install --source=npm appium-wincore-driver
 
 Requires Appium 3 and Windows 10 or later.
 
-For AI-agent use via MCP, see [wincore-mcp](https://github.com/verisoft-ai/wincore-mcp) — a separate package that drives this Appium server's `desktopdriver` sessions over the WebDriver protocol.
+For AI-agent use via MCP, see [wincore-mcp](https://github.com/verisoft-ai/wincore-mcp) — a separate package that drives this Appium server's `wincore` sessions over the WebDriver protocol.
 
 For LLM vision-based element finding (`windows: findByVision`), see [appium-window2-vision-plugin](https://github.com/verisoft-ai/appium-window2-vision-plugin) — an installable Appium plugin, kept separate so its dependencies (OpenCV, canvas, provider SDKs) aren't required by default.
 
@@ -35,7 +35,7 @@ All capabilities use the `appium:` prefix in W3C format
 | Capability | Type | Description |
 | --- | --- | --- |
 | `platformName` | string | **Required.** Must be `Windows` |
-| `appium:automationName` | string | **Required.** Must be `DesktopDriver` |
+| `appium:automationName` | string | **Required.** Must be `Wincore` |
 | `appium:app` | string | Exe path, UWP AUMID, or `Root` for the desktop |
 | `appium:appTopLevelWindow` | string | Hex/decimal handle to attach to existing window |
 | `appium:appArguments` | string | CLI arguments for the launched process |
@@ -116,7 +116,7 @@ const driver = await remote({
   path: '/',
   capabilities: {
     platformName: 'Windows',
-    'appium:automationName': 'DesktopDriver',
+    'appium:automationName': 'Wincore',
     'appium:app': 'Root', // attach to the Windows desktop shell
   },
 });
@@ -166,7 +166,7 @@ const driver = await remote({
   path: '/',
   capabilities: {
     platformName: 'Windows',
-    'appium:automationName': 'DesktopDriver',
+    'appium:automationName': 'Wincore',
     'appium:app': 'Microsoft.WindowsCalculator_8wekyb3d8bbwe!App',
   },
 });
@@ -203,7 +203,7 @@ const driver = await remote({
   path: '/',
   capabilities: {
     platformName: 'Windows',
-    'appium:automationName': 'DesktopDriver',
+    'appium:automationName': 'Wincore',
     'appium:app': 'C:\\MyApp\\app.exe',
   },
 });
@@ -304,7 +304,7 @@ const driver = await remote({
   path: '/',
   capabilities: {
     platformName: 'Windows',
-    'appium:automationName': 'DesktopDriver',
+    'appium:automationName': 'Wincore',
     'appium:app': 'C:\\Program Files\\Internet Explorer\\iexplore.exe',
     'appium:appArguments': 'https://example.com',
     'appium:shouldCloseApp': true,
@@ -335,7 +335,7 @@ const driver = await remote({
   path: '/',
   capabilities: {
     platformName: 'Windows',
-    'appium:automationName': 'DesktopDriver',
+    'appium:automationName': 'Wincore',
     'appium:appTopLevelWindow': '0x001A0B2C',
     'appium:shouldCloseApp': false,
   },
@@ -384,7 +384,7 @@ const driver = await remote({
   path: '/',
   capabilities: {
     platformName: 'Windows',
-    'appium:automationName': 'DesktopDriver',
+    'appium:automationName': 'Wincore',
     'appium:app': 'Root',
   },
 });

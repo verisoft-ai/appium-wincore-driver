@@ -31,7 +31,7 @@ export async function createCalculatorSession(extraCaps?: Record<string, unknown
         ...APPIUM_SERVER,
         capabilities: {
             platformName: 'Windows',
-            'appium:automationName': 'DesktopDriver',
+            'appium:automationName': 'Wincore',
             'appium:app': CALCULATOR_APP_ID,
             ...extraCaps,
         } as Caps,
@@ -45,7 +45,7 @@ export async function createNotepadSession(extraCaps?: Record<string, unknown>):
         ...APPIUM_SERVER,
         capabilities: {
             platformName: 'Windows',
-            'appium:automationName': 'DesktopDriver',
+            'appium:automationName': 'Wincore',
             'appium:app': NOTEPAD_APP_PATH,
             ...extraCaps,
         } as Caps,
@@ -59,7 +59,7 @@ export async function createTodoSession(extraCaps?: Record<string, unknown>): Pr
         ...APPIUM_SERVER,
         capabilities: {
             platformName: 'Windows',
-            'appium:automationName': 'DesktopDriver',
+            'appium:automationName': 'Wincore',
             'appium:app': TODO_APP_ID,
             ...extraCaps,
         } as Caps,
@@ -73,7 +73,7 @@ export async function createRootSession(extraCaps?: Record<string, unknown>): Pr
         ...APPIUM_SERVER,
         capabilities: {
             platformName: 'Windows',
-            'appium:automationName': 'DesktopDriver',
+            'appium:automationName': 'Wincore',
             'appium:app': 'Root',
             ...extraCaps,
         } as Caps,
@@ -89,7 +89,7 @@ export async function createChromeWebviewSession(extraCaps?: Record<string, unkn
         ...APPIUM_SERVER,
         capabilities: {
             platformName: 'Windows',
-            'appium:automationName': 'DesktopDriver',
+            'appium:automationName': 'Wincore',
             'appium:app': CHROME_APP_PATH,
             'appium:appArguments': `--remote-debugging-port=${port} --user-data-dir=${userDataDir} --no-first-run --no-default-browser-check https://example.com`,
             'appium:webviewEnabled': true,
@@ -109,7 +109,7 @@ export async function createEdgeIEModeSession(url: string, extraCaps?: Record<st
         ...APPIUM_SERVER,
         capabilities: {
             platformName: 'Windows',
-            'appium:automationName': 'DesktopDriver',
+            'appium:automationName': 'Wincore',
             'appium:app': EDGE_APP_PATH,
             'appium:appArguments': `--no-first-run --no-default-browser-check --no-signin-prompt --disable-sync --user-data-dir=${userDataDir} ${url}`,
             'appium:ms:waitForAppLaunch': 8,
@@ -127,7 +127,7 @@ export async function createIEBridgeSession(url: string, extraCaps?: Record<stri
         ...APPIUM_SERVER,
         capabilities: {
             platformName: 'Windows',
-            'appium:automationName': 'DesktopDriver',
+            'appium:automationName': 'Wincore',
             'appium:app': IE_APP_PATH,
             'appium:appArguments': url,
             'appium:shouldCloseApp': true,
@@ -144,7 +144,7 @@ export async function createIEBridgeAttachSession(hwnd: string, extraCaps?: Reco
         ...APPIUM_SERVER,
         capabilities: {
             platformName: 'Windows',
-            'appium:automationName': 'DesktopDriver',
+            'appium:automationName': 'Wincore',
             'appium:appTopLevelWindow': hwnd,
             'appium:shouldCloseApp': false,
             ...extraCaps,
@@ -199,7 +199,7 @@ export async function createIEProxySession(url: string, extraCaps?: Record<strin
         ...APPIUM_SERVER,
         capabilities: {
             platformName: 'Windows',
-            'appium:automationName': 'DesktopDriver',
+            'appium:automationName': 'Wincore',
             'appium:appTopLevelWindow': hwnd,
             'appium:shouldCloseApp': true,
             ...extraCaps,
@@ -221,7 +221,7 @@ async function createSimpleAppSession(appPath: string, extraCaps?: Record<string
         ...APPIUM_SERVER,
         capabilities: {
             platformName: 'Windows',
-            'appium:automationName': 'DesktopDriver',
+            'appium:automationName': 'Wincore',
             'appium:app': appPath,
             ...extraCaps,
         } as Caps,
@@ -300,7 +300,7 @@ export async function createJavaSwingAttachSession(hwnd: string, extraCaps?: Rec
         ...APPIUM_SERVER,
         capabilities: {
             platformName: 'Windows',
-            'appium:automationName': 'DesktopDriver',
+            'appium:automationName': 'Wincore',
             'appium:appTopLevelWindow': hwnd,
             'appium:shouldCloseApp': false,
             ...extraCaps,
@@ -390,7 +390,7 @@ export async function createWpfLargeSession(
         ...APPIUM_SERVER,
         capabilities: {
             platformName: 'Windows',
-            'appium:automationName': 'DesktopDriver',
+            'appium:automationName': 'Wincore',
             'appium:app': WPF_LARGE_APP_PATH,
             'appium:appArguments': `--nodes ${nodeCount}`,
             ...extraCaps,
@@ -987,7 +987,7 @@ export async function createDotnetBridgeAttachSession(hwnd: string, extraCaps?: 
         ...APPIUM_SERVER,
         capabilities: {
             platformName: 'Windows',
-            'appium:automationName': 'DesktopDriver',
+            'appium:automationName': 'Wincore',
             'appium:appTopLevelWindow': hwnd,
             'appium:shouldCloseApp': false,
             ...extraCaps,

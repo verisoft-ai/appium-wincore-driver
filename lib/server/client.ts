@@ -4,9 +4,9 @@ import { createWriteStream, WriteStream } from 'node:fs';
 import { errors } from 'appium/driver';
 import type { ServerRequest, ServerResponse } from './protocol';
 
-const SERVER_EXE_NAME = 'DesktopDriverServer.exe';
+const SERVER_EXE_NAME = 'WincoreServer.exe';
 
-export class DesktopDriverServerClient {
+export class WincoreServerClient {
     private process?: ChildProcessWithoutNullStreams;
     private requestId = 0;
     private buffer = '';
@@ -19,7 +19,7 @@ export class DesktopDriverServerClient {
     private log: { info: (...args: unknown[]) => void; debug: (...args: unknown[]) => void; warn: (...args: unknown[]) => void; error: (...args: unknown[]) => void };
     private recordingStream?: WriteStream;
 
-    constructor(log: DesktopDriverServerClient['log'], recordingPath?: string) {
+    constructor(log: WincoreServerClient['log'], recordingPath?: string) {
         this.log = log;
         if (recordingPath) {
             this.recordingStream = createWriteStream(recordingPath, { encoding: 'utf8' });
@@ -28,8 +28,8 @@ export class DesktopDriverServerClient {
 
     private getServerPath(): string {
         // Allow overriding the server exe path via environment variable
-        if (process.env.DESKTOP_DRIVER_SERVER_PATH) {
-            return process.env.DESKTOP_DRIVER_SERVER_PATH;
+        if (process.env.WINCORE_SERVER_PATH) {
+            return process.env.WINCORE_SERVER_PATH;
         }
         // __dirname at runtime is build/lib/server/, so go up 3 levels to project root
         return join(__dirname, '..', '..', '..', 'native', 'win-x64', SERVER_EXE_NAME);
@@ -37,7 +37,7 @@ export class DesktopDriverServerClient {
 
     async start(recordingPath?: string, env?: NodeJS.ProcessEnv): Promise<void> {
         const serverPath = this.getServerPath();
-        this.log.info(`Starting DesktopDriverServer from: ${serverPath}`);
+        this.log.info(`Starting WincoreServer from: ${serverPath}`);
 
         const args: string[] = [];
         if (recordingPath) {
@@ -62,7 +62,7 @@ export class DesktopDriverServerClient {
         });
 
         this.process.on('exit', (code) => {
-            this.log.info(`DesktopDriverServer exited with code ${code}`);
+            this.log.info(`WincoreServer exited with code ${code}`);
             // Reject all pending requests
             for (const [id, pending] of this.pendingRequests) {
                 pending.reject(new errors.UnknownError(`Server process exited while waiting for response to ${pending.method} (id=${id})`));
@@ -76,12 +76,12 @@ export class DesktopDriverServerClient {
 
         // Verify the server is running with a ping
         const result = await this.sendCommand('debug:ping', {});
-        this.log.info(`DesktopDriverServer started: ${JSON.stringify(result)}`);
+        this.log.info(`WincoreServer started: ${JSON.stringify(result)}`);
     }
 
     async sendCommand(method: string, params: Record<string, unknown>): Promise<unknown> {
         if (!this.process) {
-            throw new errors.UnknownError('DesktopDriverServer is not running.');
+            throw new errors.UnknownError('WincoreServer is not running.');
         }
 
         const process = this.process;

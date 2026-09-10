@@ -77,7 +77,7 @@ export function attachLogFileMirror(log: LogLike, value: unknown): LogFileMirror
         });
     }
 
-    writeLine(stream, 'info', [`AppiumDesktopDriver log mirror attached at ${path}`]);
+    writeLine(stream, 'info', [`AppiumWincoreDriver log mirror attached at ${path}`]);
 
     let detached = false;
     return {
