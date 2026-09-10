@@ -21,10 +21,11 @@ const SUITE = 'java';
  */
 describe.skipIf(!RUN)('java-agent page source / tree walk perf', () => {
     let driver: Browser;
+    let javaProc: import('node:child_process').ChildProcess;
     const results: OpResult[] = [];
 
     beforeAll(async () => {
-        driver = await createJavaSwingLargeSession(NODE_COUNT, { 'appium:perfMetrics': true });
+        ({ driver, proc: javaProc } = await createJavaSwingLargeSession(NODE_COUNT, { 'appium:perfMetrics': true }));
         // Let the tabbed pane realize its content so the accessibility tree is fully built.
         await new Promise((resolve) => setTimeout(resolve, 2000));
     }, 120_000);
@@ -34,6 +35,7 @@ describe.skipIf(!RUN)('java-agent page source / tree walk perf', () => {
             finalizeRun(SUITE, results);
         } finally {
             await quitSession(driver);
+            try { javaProc?.kill(); } catch { /* already exited */ }
         }
     });
 

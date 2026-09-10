@@ -1,6 +1,5 @@
 using System.Runtime.InteropServices;
 using System.Text.Json;
-using DesktopDriverServer.Java;
 using DesktopDriverServer.State;
 
 namespace DesktopDriverServer.Commands;
@@ -72,10 +71,11 @@ public static class AccessibilityCommands
         var elementId = p.GetProperty("elementId").GetString()
             ?? throw new ArgumentException("elementId is required.");
 
-        if (JavaAgentElement.IsJavaId(elementId))
+        if (state.Providers.TryResolve(elementId, out _))
         {
             throw new InvalidOperationException(
-                "The MSAA (IAccessible) fallback does not apply to Java elements — JAB already exposes the full accessible tree via UIA.");
+                "The MSAA (IAccessible) fallback does not apply to tree-provider elements " +
+                "(Java agent / .NET bridge) — the provider already exposes the full accessible tree.");
         }
 
         IntPtr hwnd;

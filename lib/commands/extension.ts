@@ -1190,22 +1190,8 @@ export function executeGetDpiScale(): number {
     return getResolutionScalingFactor();
 }
 
-/**
- * `windows: attachJavaSwing` execute-method handler: injects the Java Access Bridge agent
- * into the JVM owning the session's current root window (resolved by the C# server from the
- * root element's HWND) and connects to it.
- * @param opts.jdkPath - Path to the JDK to use for the injection; defaults to the `jdkPath`
- * capability.
- * @returns Resolves once the Java agent has been injected and connected.
- */
-export async function executeAttachJavaSwing(this: AppiumDesktopDriver, opts: { jdkPath?: string } = {}): Promise<void> {
-    // Injects the Java agent into the JVM owning the current root window,
-    // then connects. The C# side resolves the PID from the root element's HWND.
-    const jdkPath = opts.jdkPath ?? this.caps.jdkPath;
-    await this.sendCommand('injectJavaAgent', { jdkPath });
-}
-
-// The .NET bridge is entirely external: the appium-wincore-dotnet-bridge plugin
-// contributes windows: attachDotnetBridge and the windows: *ViaDotnetBridge
-// family, and its DesktopDriverServer tree provider supplies the matching server
-// commands. This driver has no .NET-bridge code or capability.
+// The Java Access Bridge and .NET (WinForms/WPF) bridges are entirely external:
+// appium-wincore-java-bridge contributes windows: attachJavaSwing and
+// appium-wincore-dotnet-bridge contributes windows: attachDotnetBridge +
+// windows: *ViaDotnetBridge, each with its own DesktopDriverServer tree provider.
+// This driver has no bridge code or bridge capabilities.

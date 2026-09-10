@@ -1,5 +1,4 @@
 using System.Text.Json;
-using DesktopDriverServer.Plugins.BuiltIn;
 using DesktopDriverServer.State;
 using Wincore.ServerSdk;
 
@@ -20,16 +19,13 @@ public sealed class PluginHost
     public IReadOnlyList<IServerPlugin> Plugins => _plugins;
 
     /// <summary>
-    /// Built-ins first (Java + .NET bridges — extracted to their own repos in a
-    /// later step), then external plugins from <c>DESKTOP_DRIVER_PLUGINS</c>.
+    /// Loads every external plugin listed on <c>DESKTOP_DRIVER_PLUGINS</c> (the
+    /// Java and .NET bridges each ship as their own repo + Appium plugin). The
+    /// core server has no built-in providers.
     /// </summary>
     public static PluginHost Create(Action<string> log)
     {
-        var plugins = new List<IServerPlugin>
-        {
-            new JavaBridgePlugin(),
-        };
-        plugins.AddRange(PluginLoader.LoadExternal(log));
+        var plugins = new List<IServerPlugin>(PluginLoader.LoadExternal(log));
 
         foreach (var p in plugins)
             log($"[plugins] loaded '{p.Name}' (sdk {p.SdkVersion})");

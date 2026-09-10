@@ -33,7 +33,6 @@ import {
     focusElement,
     windowsGetDeviceTime,
     windowsSwitchToWindowByTitle,
-    executeAttachJavaSwing,
     setClipboardFromBase64,
     deleteFile,
     deleteFolder,
@@ -267,15 +266,6 @@ export async function emSwitchToWindowByTitle(
     exact?: boolean,
 ): Promise<void> {
     return await windowsSwitchToWindowByTitle.call(this, { title, exact });
-}
-
-/**
- * `executeMethod` wrapper for {@link executeAttachJavaSwing}.
- * @param jdkPath - Optional path to the JDK to use for attaching the Java Access Bridge.
- * @returns Resolves once the Java Swing session has been attached.
- */
-export async function emAttachJavaSwing(this: AppiumDesktopDriver, jdkPath?: string): Promise<void> {
-    return await executeAttachJavaSwing.call(this, { jdkPath });
 }
 
 /**

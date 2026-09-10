@@ -290,6 +290,11 @@ export async function launchJavaSwingFormExternally(): Promise<{ proc: ChildProc
     return { proc, hwnd };
 }
 
+/**
+ * Session attached to an already-running Java window (external launch), then the
+ * Java Access Bridge agent injected via the appium-wincore-java-bridge plugin's
+ * `windows: attachJavaSwing` command — the only supported attach path.
+ */
 export async function createJavaSwingAttachSession(hwnd: string, extraCaps?: Record<string, unknown>): Promise<Browser> {
     const driver = await remote({
         ...APPIUM_SERVER,
@@ -297,29 +302,25 @@ export async function createJavaSwingAttachSession(hwnd: string, extraCaps?: Rec
             platformName: 'Windows',
             'appium:automationName': 'DesktopDriver',
             'appium:appTopLevelWindow': hwnd,
-            'appium:javaSwing': true,
             'appium:shouldCloseApp': false,
             ...extraCaps,
         } as Caps,
     });
+    await driver.executeScript('windows: attachJavaSwing', []);
     await driver.setTimeout({ implicit: 3000 });
     return driver;
 }
 
-export async function createJavaSwingFormSession(extraCaps?: Record<string, unknown>): Promise<Browser> {
-    const driver = await remote({
-        ...APPIUM_SERVER,
-        capabilities: {
-            platformName: 'Windows',
-            'appium:automationName': 'DesktopDriver',
-            'appium:app': JAVAW_EXE_PATH,
-            'appium:appArguments': `-cp ${JAVA_SWING_FORM_CLASSPATH} TestForm`,
-            'appium:javaSwing': true,
-            ...extraCaps,
-        } as Caps,
-    });
-    await driver.setTimeout({ implicit: 3000 });
-    return driver;
+/**
+ * Launches the Java Swing test form externally, opens a session on its window, and
+ * attaches the JAB agent. Returns the child process too — the caller must kill it.
+ */
+export async function createJavaSwingFormSession(
+    extraCaps?: Record<string, unknown>,
+): Promise<{ driver: Browser; proc: ChildProcess }> {
+    const { proc, hwnd } = await launchJavaSwingFormExternally();
+    const driver = await createJavaSwingAttachSession(hwnd, extraCaps);
+    return { driver, proc };
 }
 
 export const JAVA_SWING_LARGE_CLASSPATH = resolve(TEST_APPS_DIR, 'java-swing-large');
@@ -332,20 +333,39 @@ export const JAVA_SWING_LARGE_CLASSPATH = resolve(TEST_APPS_DIR, 'java-swing-lar
 export async function createJavaSwingLargeSession(
     nodeCount = 1500,
     extraCaps?: Record<string, unknown>,
-): Promise<Browser> {
-    const driver = await remote({
-        ...APPIUM_SERVER,
-        capabilities: {
-            platformName: 'Windows',
-            'appium:automationName': 'DesktopDriver',
-            'appium:app': JAVAW_EXE_PATH,
-            'appium:appArguments': `-DnodeCount=${nodeCount} -cp ${JAVA_SWING_LARGE_CLASSPATH} LargeTreeForm`,
-            'appium:javaSwing': true,
-            ...extraCaps,
-        } as Caps,
-    });
-    await driver.setTimeout({ implicit: 3000 });
-    return driver;
+): Promise<{ driver: Browser; proc: ChildProcess }> {
+    const proc = spawn(
+        JAVAW_EXE_PATH,
+        ['-DnodeCount=' + nodeCount, '-cp', JAVA_SWING_LARGE_CLASSPATH, 'LargeTreeForm'],
+        { detached: true, stdio: 'ignore' },
+    );
+    if (!proc.pid) {
+        throw new Error(`Failed to spawn Java process: ${JAVAW_EXE_PATH}`);
+    }
+    const pid = proc.pid;
+    const deadline = Date.now() + 20_000;
+    let hwnd = '0';
+    while (Date.now() < deadline) {
+        try {
+            hwnd = execSync(
+                `powershell -Command "(Get-Process -Id ${pid} -ErrorAction Stop).MainWindowHandle"`,
+                { stdio: ['ignore', 'pipe', 'ignore'] },
+            ).toString().trim();
+        } catch {
+            hwnd = '0';
+        }
+        if (hwnd !== '0') {
+            break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+    if (hwnd === '0') {
+        proc.kill();
+        throw new Error(`java-swing-large window did not appear within 20s (pid=${pid})`);
+    }
+
+    const driver = await createJavaSwingAttachSession(hwnd, extraCaps);
+    return { driver, proc };
 }
 
 export const WINFORMS_LARGE_APP_PATH = resolve(

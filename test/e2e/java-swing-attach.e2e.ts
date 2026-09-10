@@ -4,8 +4,6 @@ import type { Browser } from 'webdriverio';
 import { remote } from 'webdriverio';
 import {
     APPIUM_SERVER,
-    JAVAW_EXE_PATH,
-    JAVA_SWING_FORM_CLASSPATH,
     NOTEPAD_APP_PATH,
     launchJavaSwingFormExternally,
     createJavaSwingAttachSession,
@@ -142,48 +140,6 @@ describe('Java Swing — windows: attachJavaSwing post-session', () => {
     });
 });
 
-// ─── Path C: existing launch path regression ──────────────────────────────────
-
-describe('Java Swing — existing -javaagent launch path (regression)', () => {
-    let driver: Browser;
-
-    beforeAll(async () => {
-        // Original flow: Appium launches the JVM and injects -javaagent at startup
-        driver = await remote({
-            ...APPIUM_SERVER,
-            capabilities: {
-                platformName: 'Windows',
-                'appium:automationName': 'DesktopDriver',
-                'appium:app': JAVAW_EXE_PATH,
-                'appium:appArguments': `-cp ${JAVA_SWING_FORM_CLASSPATH} TestForm`,
-                'appium:javaSwing': true,
-            } as WebdriverIO.Capabilities,
-        });
-        await driver.setTimeout({ implicit: 3000 });
-    }, 30_000);
-
-    afterAll(async () => {
-        await quitSession(driver);
-    });
-
-    it('getPageSource returns Java element tree via launch path', async () => {
-        const source = await driver.getPageSource();
-        expect(source).toContain('submitButton');
-        expect(source).toContain('firstName');
-    });
-
-    it('finds firstName field via launch path', async () => {
-        const el = await driver.$('~firstName');
-        expect(await el.isExisting()).toBe(true);
-    });
-
-    it('can interact via launch path', async () => {
-        const field = await driver.$('~email');
-        await field.setValue('regression@test.com');
-        expect(await field.getText()).toBe('regression@test.com');
-    });
-});
-
 // ─── Path D: root session → launch external → switchToWindow → attachJavaSwing ─
 
 describe('Java Swing — root session, launch external, switchToWindow, then attachJavaSwing', () => {
@@ -241,18 +197,22 @@ describe('Java Swing — root session, launch external, switchToWindow, then att
 // ─── Path F: error cases ─────────────────────────────────────────────────────
 
 describe('Java Swing — error cases', () => {
-    it('javaSwing:true with no appTopLevelWindow and no app throws', async () => {
-        await expect(
-            remote({
-                ...APPIUM_SERVER,
-                capabilities: {
-                    platformName: 'Windows',
-                    'appium:automationName': 'DesktopDriver',
-                    'appium:app': 'root',
-                    'appium:javaSwing': true,
-                } as WebdriverIO.Capabilities,
-            })
-        ).rejects.toThrow();
+    it('windows: attachJavaSwing on a root/desktop session (no window) throws', async () => {
+        const driver = await remote({
+            ...APPIUM_SERVER,
+            capabilities: {
+                platformName: 'Windows',
+                'appium:automationName': 'DesktopDriver',
+                'appium:app': 'root',
+            } as WebdriverIO.Capabilities,
+        });
+        try {
+            await expect(
+                driver.executeScript('windows: attachJavaSwing', [])
+            ).rejects.toThrow();
+        } finally {
+            await quitSession(driver);
+        }
     });
 
     it('attachJavaSwing on a non-Java window includes diagnostics in the error', async () => {

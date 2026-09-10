@@ -1,3 +1,4 @@
+import type { ChildProcess } from 'node:child_process';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Browser } from 'webdriverio';
 const ELEMENT_KEY = 'element-6066-11e4-a52e-4f735466cecf' as const;
@@ -5,13 +6,15 @@ import { createJavaSwingFormSession, quitSession } from './helpers/session.js';
 
 describe('Java Swing Form', () => {
     let driver: Browser;
+    let javaProc: ChildProcess;
 
     beforeAll(async () => {
-        driver = await createJavaSwingFormSession();
-    }, 30000);
+        ({ driver, proc: javaProc } = await createJavaSwingFormSession());
+    }, 45000);
 
     afterAll(async () => {
         await quitSession(driver);
+        try { javaProc?.kill(); } catch { /* already exited */ }
     });
 
     describe('XPath element finding', () => {

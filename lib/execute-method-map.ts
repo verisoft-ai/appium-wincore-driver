@@ -78,9 +78,9 @@ export const executeMethodMap: ExecuteMethodMap<AppiumDesktopDriver> = {
     'windows: getWindowElement': { command: 'getWindowElement' },
     'windows: getMonitors': { command: 'windowsGetMonitors' },
     'windows: getDpiScale': { command: 'emGetDpiScale' },
-    'windows: attachJavaSwing': { command: 'emAttachJavaSwing', params: { optional: ['jdkPath'] } },
-    // windows: attachDotnetBridge / *ViaDotnetBridge are contributed by the
-    // appium-wincore-dotnet-bridge plugin, not this driver.
+    // Bridge commands are contributed by their own Appium plugins, not this driver:
+    //   windows: attachJavaSwing            → appium-wincore-java-bridge
+    //   windows: attachDotnetBridge, *ViaDotnetBridge → appium-wincore-dotnet-bridge
     'windows: switchToWindowByTitle': {
         command: 'emSwitchToWindowByTitle',
         params: { optional: ['title', 'exact'] },

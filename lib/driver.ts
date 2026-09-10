@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { BaseDriver, errors } from 'appium/driver';
-import { join } from 'node:path';
 import { system } from 'appium/support';
 import type { ScreenRecorder } from './commands/screen-recorder';
 import commands from './commands';
@@ -241,44 +240,14 @@ export class AppiumDesktopDriver extends BaseDriver<DesktopDriverConstraints, St
 
             // UIA server always starts. IEDriverServer starts lazily on first IE window switch.
             {
-                const javaSwingLaunchPath = this.caps.javaSwing
-                    && !!this.caps.app
-                    && this.caps.app !== 'root'
-                    && this.caps.app !== 'none'
-                    && !this.caps.appTopLevelWindow;
-
-                if (javaSwingLaunchPath) {
-                    const agentJar = join(__dirname, '..', '..', 'native', 'win-x64', 'appium-desktop-agent.jar');
-                    const agentFlag = `-javaagent:"${agentJar}"`;
-                    this.caps.appArguments = this.caps.appArguments
-                        ? `${agentFlag} ${this.caps.appArguments}`
-                        : agentFlag;
-                    this.log.info(`Java Swing mode enabled — injecting agent: ${agentJar}`);
-                }
-
                 await this.startServerSession();
 
-                if (this.caps.javaSwing) {
-                    if (javaSwingLaunchPath) {
-                        this.log.info('Connecting to Java agent...');
-                        await this.sendCommand('enableJavaSwing', {});
-                        this.log.info('Java agent connected successfully.');
-                    } else {
-                        if (!this.caps.appTopLevelWindow) {
-                            throw new errors.InvalidArgumentError(
-                                'javaSwing:true with no app requires the appTopLevelWindow capability to identify the Java window.'
-                            );
-                        }
-                        this.log.info('Java Swing mode: injecting agent into running JVM via Java Attach API...');
-                        await this.sendCommand('injectJavaAgent', { hwnd: Number(this.caps.appTopLevelWindow), jdkPath: this.caps.jdkPath });
-                        this.log.info('Java agent injected and connected successfully.');
-                    }
-                }
-
-                // .NET bridge attach is not a driver concern — the
-                // appium-wincore-dotnet-bridge plugin owns it via
-                // `windows: attachDotnetBridge` (call it after switching to the
-                // target window), the same way the uia-bridge plugin works.
+                // Java Swing (JAB) and .NET (WinForms/WPF) bridge attach are not
+                // driver concerns — the appium-wincore-java-bridge and
+                // appium-wincore-dotnet-bridge plugins own them via
+                // `windows: attachJavaSwing` / `windows: attachDotnetBridge`,
+                // called after switching to the target window (same shape as the
+                // uia-bridge plugin).
 
                 if (this.caps.prerun) {
                     this.log.info('Executing prerun PowerShell script...');
