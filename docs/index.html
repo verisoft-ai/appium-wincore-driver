@@ -388,7 +388,7 @@ from appium.options.windows import WindowsOptions
 
 options = WindowsOptions()
 options.app = 'C:\\Windows\\System32\\notepad.exe'
-options.automation_name = 'DesktopDriver'
+options.automation_name = 'Wincore'
 
 driver = webdriver.Remote('http://127.0.0.1:4723', options=options)
 
@@ -402,7 +402,7 @@ import java.net.URL;
 
 DesiredCapabilities caps = new DesiredCapabilities();
 caps.setCapability("platformName", "Windows");
-caps.setCapability("appium:automationName", "DesktopDriver");
+caps.setCapability("appium:automationName", "Wincore");
 caps.setCapability("appium:app", "C:\\Windows\\System32\\notepad.exe");
 
 WindowsDriver driver = new WindowsDriver(
@@ -419,7 +419,7 @@ const driver = await remote({
   port: 4723,
   capabilities: {
     platformName: 'Windows',
-    'appium:automationName': 'DesktopDriver',
+    'appium:automationName': 'Wincore',
     'appium:app': 'C:\\Windows\\System32\\notepad.exe',
   },
 });
@@ -432,7 +432,7 @@ using OpenQA.Selenium.Appium.Windows;
 
 var options = new AppiumOptions();
 options.PlatformName = "Windows";
-options.AddAdditionalAppiumOption("automationName", "DesktopDriver");
+options.AddAdditionalAppiumOption("automationName", "Wincore");
 options.AddAdditionalAppiumOption("app", @"C:\Windows\System32\notepad.exe");
 
 var driver = new WindowsDriver(
@@ -483,7 +483,7 @@ options.return_all_window_handles = True</code></pre>
         </thead>
         <tbody>
           <tr><td><code>platformName</code></td><td>string</td><td>—</td><td>Must be <code>Windows</code></td></tr>
-          <tr><td><code>automationName</code></td><td>string</td><td>—</td><td>Must be <code>DesktopDriver</code></td></tr>
+          <tr><td><code>automationName</code></td><td>string</td><td>—</td><td>Must be <code>Wincore</code></td></tr>
           <tr><td><code>app</code></td><td>string</td><td>—</td><td>App path or UWP App User Model ID</td></tr>
           <tr><td><code>appTopLevelWindow</code></td><td>string/number</td><td>—</td><td>Attach to existing window by handle</td></tr>
           <tr><td><code>appArguments</code></td><td>string</td><td>—</td><td>CLI arguments for app launch</td></tr>
