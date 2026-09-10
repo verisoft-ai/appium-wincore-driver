@@ -1,12 +1,7 @@
 /**
- * Locator-to-condition translation shared between the driver's standard find
- * (`findElOrEls` in driver.ts) and the explicit `windows: find*ViaDotnetBridge`
- * commands (extension.ts). Both need the exact same strategy handling — xpath
- * (including predicates like `contains()`), accessibility id, name, class name,
- * tag name, id, and `-windows uiautomation` — the only thing that differs
- * between "search real UIA" and "search the .NET bridge's tree" is which server
- * command a `findElement`/`findElements` call actually reaches, which is what
- * {@link wrapForDotnetBridge} remaps.
+ * Locator-to-condition translation for the driver's standard find (`findElOrEls`
+ * in driver.ts): xpath (including predicates like `contains()`), accessibility id,
+ * name, class name, tag name, id, and `-windows uiautomation`.
  */
 import { errors, W3C_ELEMENT_KEY } from 'appium/driver';
 import type { Element } from '@appium/types';
@@ -100,19 +95,4 @@ export async function locateElements(
     }
 
     return { [W3C_ELEMENT_KEY]: result };
-}
-
-/**
- * Remaps the two generic find command names to their .NET bridge counterparts
- * — everything else (getProperty, saveRootElementToTable, ...) passes through
- * unchanged, which is what lets xpath predicate evaluation (contains(), etc.)
- * work identically against the bridge's tree with zero xpath-layer changes.
- */
-export function wrapForDotnetBridge(base: SendCommandFn): SendCommandFn {
-    return (method, params) => {
-        if (method === 'findElement') { return base('findElementDotnetBridge', params); }
-        if (method === 'findElements') { return base('findElementsDotnetBridge', params); }
-        if (method === 'evaluateXPath') { return base('evaluateXPathDotnetBridge', params); }
-        return base(method, params);
-    };
 }

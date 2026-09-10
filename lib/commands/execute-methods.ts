@@ -12,7 +12,6 @@ import { Element } from '@appium/types';
 import { AppiumDesktopDriver } from '../driver';
 import { ClickType } from '../enums';
 import { executeGetNativeChildren } from './native';
-import type { LocateStrategy } from './find-via';
 import {
     patternInvoke,
     patternExpand,
@@ -35,10 +34,6 @@ import {
     windowsGetDeviceTime,
     windowsSwitchToWindowByTitle,
     executeAttachJavaSwing,
-    executeAttachDotnetBridge,
-    findElementViaDotnetBridge,
-    findElementsViaDotnetBridge,
-    getPageSourceViaDotnetBridge,
     setClipboardFromBase64,
     deleteFile,
     deleteFolder,
@@ -281,59 +276,6 @@ export async function emSwitchToWindowByTitle(
  */
 export async function emAttachJavaSwing(this: AppiumDesktopDriver, jdkPath?: string): Promise<void> {
     return await executeAttachJavaSwing.call(this, { jdkPath });
-}
-
-/**
- * `executeMethod` wrapper for {@link executeAttachDotnetBridge}.
- * @returns Resolves once the .NET bridge session has been attached.
- */
-export async function emAttachDotnetBridge(this: AppiumDesktopDriver): Promise<void> {
-    return await executeAttachDotnetBridge.call(this);
-}
-
-/**
- * `executeMethod` wrapper for {@link findElementViaDotnetBridge}.
- * @param using - Locator strategy (xpath, accessibility id, name, class name, tag name, id, -windows uiautomation).
- * @param value - The locator value for the chosen strategy.
- * @param contextElementId - Optional .NET bridge element id to search within.
- * @returns The matching element.
- * @throws {NoSuchElementError} If no element matches — same contract as standard `findElement`.
- */
-export async function emFindElementViaDotnetBridge(
-    this: AppiumDesktopDriver,
-    using: LocateStrategy,
-    value: string,
-    contextElementId?: string,
-): Promise<Element> {
-    return await findElementViaDotnetBridge.call(this, { using, value, contextElementId });
-}
-
-/**
- * `executeMethod` wrapper for {@link findElementsViaDotnetBridge}.
- * @param using - Locator strategy, same options as {@link emFindElementViaDotnetBridge}.
- * @param value - The locator value for the chosen strategy.
- * @param contextElementId - Optional .NET bridge element id to search within.
- * @returns All matching elements (empty array if none).
- */
-export async function emFindElementsViaDotnetBridge(
-    this: AppiumDesktopDriver,
-    using: LocateStrategy,
-    value: string,
-    contextElementId?: string,
-): Promise<Element[]> {
-    return await findElementsViaDotnetBridge.call(this, { using, value, contextElementId });
-}
-
-/**
- * `executeMethod` wrapper for {@link getPageSourceViaDotnetBridge}.
- * @param contextElementId - Optional .NET bridge element id to scope the dump to a subtree.
- * @returns The bridge tree as XML.
- */
-export async function emGetPageSourceViaDotnetBridge(
-    this: AppiumDesktopDriver,
-    contextElementId?: string,
-): Promise<string> {
-    return await getPageSourceViaDotnetBridge.call(this, { contextElementId });
 }
 
 /**
