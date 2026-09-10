@@ -28,7 +28,6 @@ public sealed class PluginHost
         var plugins = new List<IServerPlugin>
         {
             new JavaBridgePlugin(),
-            new DotNetBridgePlugin(),
         };
         plugins.AddRange(PluginLoader.LoadExternal(log));
 

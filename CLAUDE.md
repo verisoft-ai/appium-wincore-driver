@@ -24,7 +24,25 @@ This is an **Appium driver** for Windows desktop UI automation, exposed via the 
 
 ### Core driver flow
 
-`lib/driver.ts` — `AppiumDesktopDriver` extends `BaseDriver`. On `createSession()`, it spawns **`DesktopDriverServer.exe`** (`lib/server/client.ts`) — a persistent .NET process that remains open for the session lifetime. Its source lives in this repo at `csharp/DesktopDriverServer/` (command handlers under `Commands/`); `native/win-x64/DesktopDriverServer.exe` is just the build output, not a vendored/external binary. All UI Automation operations are sent to this process as newline-delimited JSON requests over stdin/stdout (`lib/server/protocol.ts`: `{id, method, params}` → `{id, result|error, duration_ms}`), resolved by request id. `DesktopDriverServer.exe` handles far more than tree navigation — process lifecycle (`startProcess`/`stopProcess`/window move/resize), clipboard, screenshots, file ops, bridge injection (Java/.NET), and PowerShell execution (`executePowerShellScript`) all dispatch through it too; there is no persistent PowerShell session on the Node side. The one channel that bypasses this process entirely is raw input synthesis: `lib/winapi/user32.ts` loads `user32.dll`/`kernel32.dll` directly via the `koffi` FFI library and calls `SendInput`/`SetCursorPos`/etc. straight from Node.
+`lib/driver.ts` — `AppiumDesktopDriver` extends `BaseDriver`. On `createSession()`, it spawns **`DesktopDriverServer.exe`** (`lib/server/client.ts`) — a persistent .NET process that remains open for the session lifetime. Its source lives in this repo at `csharp/DesktopDriverServer/` (command handlers under `Commands/`); `native/win-x64/DesktopDriverServer.exe` is just the build output, not a vendored/external binary. All UI Automation operations are sent to this process as newline-delimited JSON requests over stdin/stdout (`lib/server/protocol.ts`: `{id, method, params}` → `{id, result|error, duration_ms}`), resolved by request id. `DesktopDriverServer.exe` handles far more than tree navigation — process lifecycle (`startProcess`/`stopProcess`/window move/resize), clipboard, screenshots, file ops, Java Access Bridge injection, and PowerShell execution (`executePowerShellScript`) all dispatch through it too; there is no persistent PowerShell session on the Node side. The one channel that bypasses this process entirely is raw input synthesis: `lib/winapi/user32.ts` loads `user32.dll`/`kernel32.dll` directly via the `koffi` FFI library and calls `SendInput`/`SetCursorPos`/etc. straight from Node.
+
+### Server plugins (tree providers)
+
+`DesktopDriverServer.exe` loads external .NET plugins at startup from directories on the
+`DESKTOP_DRIVER_PLUGINS` environment variable (`;`-separated; set by an installed
+`appium-wincore-*` Appium plugin before the server spawns). Each plugin folder has a
+`plugin.json` manifest + assembly implementing `IServerPlugin` (`csharp/WincoreServerSdk/`,
+the published plugin contract): it contributes JSON-RPC command handlers and one
+`ITreeProvider` — a source of elements outside the real UIA tree, addressed by an element-id
+prefix (`java:`, `dotnet:`). Command handlers in `Commands/` route to a provider via
+`state.Providers.TryResolve(elementId)` / `TryResolveWindow(hwnd)` — no bridge-specific
+branching. Loader + registry live in `csharp/DesktopDriverServer/Plugins/`.
+
+The **Java Access Bridge** provider is currently an in-tree built-in
+(`Plugins/BuiltIn/JavaBridgePlugin.cs`). The **.NET (WinForms/WPF/DevExpress) bridge** has
+moved to its own repo + Appium plugin,
+[appium-wincore-dotnet-bridge](https://github.com/verisoft-ai/appium-wincore-dotnet-bridge),
+loaded via `DESKTOP_DRIVER_PLUGINS`.
 
 ### Element finding
 
