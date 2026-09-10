@@ -16,7 +16,7 @@ const SUITE = 'dotnet-bridge';
 
 /**
  * .NET bridge reflected-tree walk benchmark. Runs against winforms-large (this suite's
- * only fixture), attached with dotnetBridge:true and walked via the bridge's own
+ * only fixture), attached via windows: attachDotnetBridge and walked via the bridge's own
  * reflected tree (`windows: getPageSourceViaDotnetBridge` / bridge XPath). The bridge
  * uses the same one-RPC-per-node newline-JSON channel as the Java agent, so its counters
  * read `dotnetBridge.getChildren` etc.

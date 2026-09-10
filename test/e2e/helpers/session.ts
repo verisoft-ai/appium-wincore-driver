@@ -969,11 +969,13 @@ export async function createDotnetBridgeAttachSession(hwnd: string, extraCaps?: 
             platformName: 'Windows',
             'appium:automationName': 'DesktopDriver',
             'appium:appTopLevelWindow': hwnd,
-            'appium:dotnetBridge': true,
             'appium:shouldCloseApp': false,
             ...extraCaps,
         } as Caps,
     });
+    // Attach is a plugin command, not a capability — the session root is already the
+    // target window (appTopLevelWindow), so no explicit switch is needed first.
+    await driver.executeScript('windows: attachDotnetBridge', []);
     await driver.setTimeout({ implicit: 3000 });
     return driver;
 }

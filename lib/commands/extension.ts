@@ -1205,8 +1205,7 @@ export async function executeAttachJavaSwing(this: AppiumDesktopDriver, opts: { 
     await this.sendCommand('injectJavaAgent', { jdkPath });
 }
 
-// The .NET bridge's client-facing commands — windows: attachDotnetBridge and the
-// windows: *ViaDotnetBridge family — now live in the appium-wincore-dotnet-bridge
-// plugin, which reaches the server's dotnet-bridge commands directly. The
-// `dotnetBridge` capability flow in driver.ts still calls `injectDotnetBridge`
-// (a server-plugin command) for session-time attach.
+// The .NET bridge is entirely external: the appium-wincore-dotnet-bridge plugin
+// contributes windows: attachDotnetBridge and the windows: *ViaDotnetBridge
+// family, and its DesktopDriverServer tree provider supplies the matching server
+// commands. This driver has no .NET-bridge code or capability.

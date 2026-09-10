@@ -201,18 +201,22 @@ describe('.NET Bridge — root session, launch external, switchToWindow, then at
 // ─── Path F: error cases ─────────────────────────────────────────────────────
 
 describe('.NET Bridge — error cases', () => {
-    it('dotnetBridge:true with no appTopLevelWindow and no app throws', async () => {
-        await expect(
-            remote({
-                ...APPIUM_SERVER,
-                capabilities: {
-                    platformName: 'Windows',
-                    'appium:automationName': 'DesktopDriver',
-                    'appium:app': 'root',
-                    'appium:dotnetBridge': true,
-                } as WebdriverIO.Capabilities,
-            })
-        ).rejects.toThrow();
+    it('windows: attachDotnetBridge on a root/desktop session (no window) throws', async () => {
+        const driver = await remote({
+            ...APPIUM_SERVER,
+            capabilities: {
+                platformName: 'Windows',
+                'appium:automationName': 'DesktopDriver',
+                'appium:app': 'root',
+            } as WebdriverIO.Capabilities,
+        });
+        try {
+            await expect(
+                driver.executeScript('windows: attachDotnetBridge', [{}])
+            ).rejects.toThrow();
+        } finally {
+            await quitSession(driver);
+        }
     });
 
     it('attachDotnetBridge on a plain Win32 app (no CLR) includes diagnostics in the error', async () => {
