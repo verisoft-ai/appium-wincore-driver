@@ -1,6 +1,4 @@
 using System.Text.Json;
-using DesktopDriverServer.DotNet;
-using DesktopDriverServer.Java;
 using DesktopDriverServer.Server;
 using DesktopDriverServer.State;
 using DesktopDriverServer.Uia3;
@@ -17,48 +15,11 @@ public static class ElementCommands
         var propertyName = p.GetProperty("property").GetString()
             ?? throw new ArgumentException("property is required.");
 
-        if (JavaAgentElement.IsJavaId(elementId))
+        // A tree-provider element (Java agent, .NET bridge): the provider owns the
+        // UIA-property-name mapping and any per-property freshness re-fetch.
+        if (state.Providers.TryResolve(elementId, out var provider))
         {
-            var javaEl = state.Java!.GetById(elementId);
-            var lowerProp = propertyName.ToLowerInvariant();
-            if (lowerProp is "isenabled" or "isoffscreen" or "haskeyboardfocus" or "iskeyboardfocusable" or "clickablepoint" or "states")
-            {
-                state.Java.GetFreshInfo(javaEl);
-            }
-
-            // JAB has no ExpandCollapseState property — it reports expansion via the
-            // AccessibleState list instead (same shape GetToggleState reads for
-            // checked/indeterminate). A literal "ExpandCollapseState" key lookup always
-            // misses and silently returns "", which patternExpand's isExpanded() (extension.ts)
-            // reads as a confirmed "not expanded" rather than "can't verify".
-            if (propertyName.Equals("ExpandCollapseState", StringComparison.OrdinalIgnoreCase))
-            {
-                state.Java.GetFreshInfo(javaEl);
-                var states = state.Java.GetProperty(javaEl, "States")?.ToString() ?? "";
-                if (states.Contains("expanded", StringComparison.OrdinalIgnoreCase)) return "Expanded";
-                if (states.Contains("collapsed", StringComparison.OrdinalIgnoreCase)) return "Collapsed";
-                return "";
-            }
-
-            // JAB has no HasKeyboardFocus property — literal key lookup misses and
-            // silently returns "" (falsy), indistinguishable from a real "not focused".
-            // Focus is reported via the AccessibleState list instead, same as
-            // ExpandCollapseState above.
-            if (propertyName.Equals("HasKeyboardFocus", StringComparison.OrdinalIgnoreCase))
-            {
-                state.Java.GetFreshInfo(javaEl);
-                var states = state.Java.GetProperty(javaEl, "States")?.ToString() ?? "";
-                return states.Contains("focused", StringComparison.OrdinalIgnoreCase);
-            }
-
-            return state.Java.GetProperty(javaEl, propertyName);
-        }
-
-        if (BridgeAgentElement.IsDotnetId(elementId))
-        {
-            var bridgeEl = state.DotNetBridge!.GetById(elementId);
-            state.DotNetBridge.GetFreshInfo(bridgeEl);
-            return state.DotNetBridge.GetProperty(bridgeEl, propertyName);
+            return provider.GetProperty(elementId, propertyName);
         }
 
         var element = state.GetElement(elementId);
@@ -169,11 +130,8 @@ public static class ElementCommands
         var elementId = p.GetProperty("elementId").GetString()
             ?? throw new ArgumentException("elementId is required.");
 
-        if (JavaAgentElement.IsJavaId(elementId))
-            return state.Java!.GetTagName(state.Java.GetById(elementId));
-
-        if (BridgeAgentElement.IsDotnetId(elementId))
-            return state.DotNetBridge!.GetTagName(state.DotNetBridge.GetById(elementId));
+        if (state.Providers.TryResolve(elementId, out var provider))
+            return provider.GetTagName(elementId);
 
         var element = state.GetElement(elementId);
         var ctId = element.CurrentControlType;
@@ -186,11 +144,8 @@ public static class ElementCommands
         var elementId = p.GetProperty("elementId").GetString()
             ?? throw new ArgumentException("elementId is required.");
 
-        if (JavaAgentElement.IsJavaId(elementId))
-            return state.Java!.GetText(state.Java.GetById(elementId));
-
-        if (BridgeAgentElement.IsDotnetId(elementId))
-            return state.DotNetBridge!.GetText(state.DotNetBridge.GetById(elementId));
+        if (state.Providers.TryResolve(elementId, out var provider))
+            return provider.GetText(elementId);
 
         var element = state.GetElement(elementId);
 
@@ -227,11 +182,8 @@ public static class ElementCommands
         var elementId = p.GetProperty("elementId").GetString()
             ?? throw new ArgumentException("elementId is required.");
 
-        if (JavaAgentElement.IsJavaId(elementId))
-            return state.Java!.GetRect(state.Java.GetById(elementId));
-
-        if (BridgeAgentElement.IsDotnetId(elementId))
-            return state.DotNetBridge!.GetRect(state.DotNetBridge.GetById(elementId));
+        if (state.Providers.TryResolve(elementId, out var provider))
+            return provider.GetRect(elementId);
 
         var element = state.GetElement(elementId);
         var rect = element.CurrentBoundingRectangle;
@@ -269,15 +221,9 @@ public static class ElementCommands
         var elementId = p.GetProperty("elementId").GetString()
             ?? throw new ArgumentException("elementId is required.");
 
-        if (JavaAgentElement.IsJavaId(elementId))
+        if (state.Providers.TryResolve(elementId, out var provider))
         {
-            state.Java!.RequestFocus(state.Java.GetById(elementId));
-            return null;
-        }
-
-        if (BridgeAgentElement.IsDotnetId(elementId))
-        {
-            state.DotNetBridge!.RequestFocus(state.DotNetBridge.GetById(elementId));
+            provider.RequestFocus(elementId);
             return null;
         }
 
@@ -293,15 +239,9 @@ public static class ElementCommands
             ?? throw new ArgumentException("elementId is required.");
         var value = p.GetProperty("value").GetString() ?? "";
 
-        if (JavaAgentElement.IsJavaId(elementId))
+        if (state.Providers.TryResolve(elementId, out var provider))
         {
-            state.Java!.SetValue(state.Java.GetById(elementId), value);
-            return null;
-        }
-
-        if (BridgeAgentElement.IsDotnetId(elementId))
-        {
-            state.DotNetBridge!.SetValue(state.DotNetBridge.GetById(elementId), value);
+            provider.SetValue(elementId, value);
             return null;
         }
 
@@ -320,11 +260,8 @@ public static class ElementCommands
         var elementId = p.GetProperty("elementId").GetString()
             ?? throw new ArgumentException("elementId is required.");
 
-        if (JavaAgentElement.IsJavaId(elementId))
-            return state.Java!.GetText(state.Java.GetById(elementId));
-
-        if (BridgeAgentElement.IsDotnetId(elementId))
-            return state.DotNetBridge!.GetText(state.DotNetBridge.GetById(elementId));
+        if (state.Providers.TryResolve(elementId, out var provider))
+            return provider.GetText(elementId);
 
         var element = state.GetElement(elementId);
         if (element.GetCurrentPattern(UIA.ValuePatternId) is IUIAutomationValuePattern vp)

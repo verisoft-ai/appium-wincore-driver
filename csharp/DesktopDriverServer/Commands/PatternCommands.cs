@@ -1,6 +1,4 @@
 using System.Text.Json;
-using DesktopDriverServer.DotNet;
-using DesktopDriverServer.Java;
 using DesktopDriverServer.State;
 using DesktopDriverServer.Uia3;
 
@@ -14,15 +12,9 @@ public static class PatternCommands
         var elementId = p.GetProperty("elementId").GetString()
             ?? throw new ArgumentException("elementId is required.");
 
-        if (JavaAgentElement.IsJavaId(elementId))
+        if (state.Providers.TryResolve(elementId, out var provider))
         {
-            state.Java!.Invoke(state.Java.GetById(elementId));
-            return null;
-        }
-
-        if (BridgeAgentElement.IsDotnetId(elementId))
-        {
-            state.DotNetBridge!.Invoke(state.DotNetBridge.GetById(elementId));
+            provider.Invoke(elementId);
             return null;
         }
 
@@ -59,17 +51,11 @@ public static class PatternCommands
         var elementId = p.GetProperty("elementId").GetString()
             ?? throw new ArgumentException("elementId is required.");
 
-        if (JavaAgentElement.IsJavaId(elementId))
+        // Java throws "JAB_NO_EXPAND_ACTION" when AccessibleAction is unavailable —
+        // caller (TypeScript patternExpand) catches and falls back to ALT+Down.
+        if (state.Providers.TryResolve(elementId, out var provider))
         {
-            // Throws with "JAB_NO_EXPAND_ACTION" when AccessibleAction unavailable —
-            // caller (TypeScript patternExpand) catches and falls back to ALT+Down.
-            state.Java!.Expand(state.Java.GetById(elementId));
-            return null;
-        }
-
-        if (BridgeAgentElement.IsDotnetId(elementId))
-        {
-            state.DotNetBridge!.Expand(state.DotNetBridge.GetById(elementId));
+            provider.Expand(elementId);
             return null;
         }
 
@@ -116,19 +102,12 @@ public static class PatternCommands
         var elementId = p.GetProperty("elementId").GetString()
             ?? throw new ArgumentException("elementId is required.");
 
-        // Java agent has no TogglePattern — fire the default accessible action (toggles checkboxes, buttons).
-        if (JavaAgentElement.IsJavaId(elementId))
+        // Neither the Java agent nor the .NET bridge has a TogglePattern equivalent —
+        // fire the default accessible action (toggles checkboxes, buttons). The
+        // provider's Invoke already applies the UIA Invoke settle delay.
+        if (state.Providers.TryResolve(elementId, out var provider))
         {
-            state.Java!.Invoke(state.Java.GetById(elementId));
-            Thread.Sleep(50); // match UIA Invoke settle delay so the next state-read isn't stale
-            return null;
-        }
-
-        // Bridge has no TogglePattern equivalent either — same fallback.
-        if (BridgeAgentElement.IsDotnetId(elementId))
-        {
-            state.DotNetBridge!.Invoke(state.DotNetBridge.GetById(elementId));
-            Thread.Sleep(50);
+            provider.Invoke(elementId);
             return null;
         }
 
@@ -143,17 +122,8 @@ public static class PatternCommands
         var id = p.GetProperty("elementId").GetString()
             ?? throw new ArgumentException("elementId is required.");
 
-        // Java agent: re-fetch info live — cached Info.states is stale after interaction.
-        if (JavaAgentElement.IsJavaId(id))
-        {
-            var states = GetJavaStates(state, state.Java!.GetById(id));
-            if (states.Contains("indeterminate", StringComparison.OrdinalIgnoreCase))
-                return "Indeterminate";
-            return states.Contains("checked", StringComparison.OrdinalIgnoreCase) ? "On" : "Off";
-        }
-
-        if (BridgeAgentElement.IsDotnetId(id))
-            return state.DotNetBridge!.GetToggleState(state.DotNetBridge.GetById(id));
+        if (state.Providers.TryResolve(id, out var provider))
+            return provider.GetToggleState(id);
 
         var pattern = RequirePattern<IUIAutomationTogglePattern>(state, parameters, UIA.TogglePatternId, "TogglePattern");
         return pattern.CurrentToggleState.ToString();
@@ -188,15 +158,9 @@ public static class PatternCommands
         var elementId = p.GetProperty("elementId").GetString()
             ?? throw new ArgumentException("elementId is required.");
 
-        if (JavaAgentElement.IsJavaId(elementId))
+        if (state.Providers.TryResolve(elementId, out var provider))
         {
-            state.Java!.Select(state.Java.GetById(elementId));
-            return null;
-        }
-
-        if (BridgeAgentElement.IsDotnetId(elementId))
-        {
-            state.DotNetBridge!.Select(state.DotNetBridge.GetById(elementId));
+            provider.Select(elementId);
             return null;
         }
 
@@ -225,22 +189,8 @@ public static class PatternCommands
         var id = p.GetProperty("elementId").GetString()
             ?? throw new ArgumentException("elementId is required.");
 
-        // Java agent: re-fetch info live — cached Info.states is stale after interaction.
-        if (JavaAgentElement.IsJavaId(id))
-        {
-            var states = GetJavaStates(state, state.Java!.GetById(id));
-            return states.Contains("checked", StringComparison.OrdinalIgnoreCase)
-                || states.Contains("selected", StringComparison.OrdinalIgnoreCase);
-        }
-
-        // Bridge: re-fetch info live and read the IsSelected key the agent reports.
-        if (BridgeAgentElement.IsDotnetId(id))
-        {
-            var bridgeEl = state.DotNetBridge!.GetById(id);
-            state.DotNetBridge.GetFreshInfo(bridgeEl);
-            var value = state.DotNetBridge.GetProperty(bridgeEl, "IsSelected");
-            return value is bool b && b;
-        }
+        if (state.Providers.TryResolve(id, out var provider))
+            return provider.IsSelected(id);
 
         var pattern = RequirePattern<IUIAutomationSelectionItemPattern>(state, parameters, UIA.SelectionItemPatternId, "SelectionItemPattern");
         return pattern.CurrentIsSelected != 0;
@@ -321,12 +271,6 @@ public static class PatternCommands
             return null;
         }
         throw new InvalidOperationException("Element does not support TransformPattern.");
-    }
-
-    private static string GetJavaStates(SessionState state, JavaAgentElement javaEl)
-    {
-        var info = state.Java!.GetFreshInfo(javaEl) ?? javaEl.Info;
-        return info.TryGetValue("States", out var s) ? s?.ToString() ?? "" : "";
     }
 
     private static IUIAutomationElement GetElement(SessionState state, JsonElement? parameters)

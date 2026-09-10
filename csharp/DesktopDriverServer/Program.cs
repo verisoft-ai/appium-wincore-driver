@@ -1,3 +1,4 @@
+using DesktopDriverServer.Plugins;
 using DesktopDriverServer.Server;
 
 namespace DesktopDriverServer;
@@ -21,12 +22,17 @@ class Program
             }
         }
 
+        // Load plugins (built-in Java + .NET bridges, plus anything on
+        // DESKTOP_DRIVER_PLUGINS) before the server starts so the dispatcher can
+        // merge their command handlers.
+        var plugins = PluginHost.Create(msg => Console.Error.WriteLine($"[{DateTime.UtcNow:HH:mm:ss.fff}] {msg}"));
+
         // UIAutomation COM objects require STA threading.
         // [STAThread] on async Main doesn't reliably set the apartment state,
         // so we create a dedicated STA thread and run the server on it.
         var staThread = new Thread(() =>
         {
-            var server = new JsonRpcServer(recordingPath);
+            var server = new JsonRpcServer(plugins, recordingPath);
             server.Run();
         });
         staThread.SetApartmentState(ApartmentState.STA);

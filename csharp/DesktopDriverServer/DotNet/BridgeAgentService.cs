@@ -24,11 +24,10 @@ internal sealed class BridgeAgentService : IDisposable
 
     /// <summary>
     /// When non-null, every RPC round trip is timed and recorded under
-    /// <c>dotnetBridge.&lt;command&gt;</c>. Set by
-    /// <see cref="State.SessionState.EnableDotnetBridge"/> only when the
-    /// <c>perfMetrics</c> capability is on.
+    /// <c>dotnetBridge.&lt;command&gt;</c>. Set by the .NET bridge plugin's provider
+    /// on connect, only when the <c>perfMetrics</c> capability is on.
     /// </summary>
-    internal PerfCounters? Perf { get; set; }
+    internal IPerfSink? Perf { get; set; }
 
     // ── Connection ─────────────────────────────────────────────────────────────
 

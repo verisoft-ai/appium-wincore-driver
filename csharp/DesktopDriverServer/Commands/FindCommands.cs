@@ -1,7 +1,4 @@
 using System.Text.Json;
-using DesktopDriverServer.DotNet;
-using DesktopDriverServer.Java;
-using DesktopDriverServer.Protocol;
 using DesktopDriverServer.Server;
 using DesktopDriverServer.State;
 using DesktopDriverServer.Uia3;
@@ -23,18 +20,13 @@ public static class FindCommands
             contextElementId = ctxProp.GetString();
         }
 
-        // Route to Java agent when context is a Java element or the UIA root is a Java window.
-        if (TryRouteToJava(state, contextElementId, out var javaRoot))
+        // Route to a tree provider when the context is already one of its elements,
+        // or the search root is a window it auto-routes (Java windows). Opt-in-only
+        // providers (.NET bridge) are reached through their own *ViaDotnetBridge
+        // commands, never automatically from here.
+        if (TryRouteToProvider(state, contextElementId, out var provider, out var providerRootId))
         {
-            return state.Java!.FindFirst(javaRoot!, conditionDto, scope);
-        }
-
-        // Route to .NET bridge only when context is already a bridge element — see
-        // TryRouteToDotnet. Bridge-only content is reached via the explicit
-        // *ViaDotnetBridge commands, never automatically from here.
-        if (TryRouteToDotnet(state, contextElementId, out var dotnetRoot))
-        {
-            return state.DotNetBridge!.FindFirst(dotnetRoot!, conditionDto, scope);
+            return provider.FindFirst(providerRootId, conditionDto, scope);
         }
 
         // When searching from the session root we re-resolve the attached HWND
@@ -101,18 +93,9 @@ public static class FindCommands
             contextElementId = ctxProp.GetString();
         }
 
-        // Route to Java agent when context is a Java element or the UIA root is a Java window.
-        if (TryRouteToJava(state, contextElementId, out var javaRoot))
+        if (TryRouteToProvider(state, contextElementId, out var provider, out var providerRootId))
         {
-            return state.Java!.FindAll(javaRoot!, conditionDto, scope);
-        }
-
-        // Route to .NET bridge only when context is already a bridge element — see
-        // TryRouteToDotnet. Bridge-only content is reached via the explicit
-        // *ViaDotnetBridge commands, never automatically from here.
-        if (TryRouteToDotnet(state, contextElementId, out var dotnetRoot))
-        {
-            return state.DotNetBridge!.FindAll(dotnetRoot!, conditionDto, scope);
+            return provider.FindAll(providerRootId, conditionDto, scope);
         }
 
         // When searching from the session root we re-resolve the attached HWND
@@ -178,23 +161,9 @@ public static class FindCommands
         var elementId = p.GetProperty("elementId").GetString()
             ?? throw new ArgumentException("elementId is required.");
 
-        if (JavaAgentElement.IsJavaId(elementId))
+        if (state.Providers.TryResolve(elementId, out var provider))
         {
-            if (state.Java == null) return false;
-            try
-            {
-                return state.Java!.IsAlive(elementId);
-            }
-            catch { return false; }
-        }
-
-        if (BridgeAgentElement.IsDotnetId(elementId))
-        {
-            if (state.DotNetBridge == null) return false;
-            try
-            {
-                return state.DotNetBridge!.IsAlive(elementId);
-            }
+            try { return provider.IsAlive(elementId); }
             catch { return false; }
         }
 
@@ -460,138 +429,60 @@ public static class FindCommands
         return results.ToArray();
     }
 
-    // ── Java agent routing ───────────────────────────────────────────────────────
+    // ── tree-provider routing ────────────────────────────────────────────────────
 
     /// <summary>
-    /// Returns true when the find request should be routed to the Java agent.
-    /// Sets <paramref name="javaRoot"/> to the Java element to search from.
+    /// Decides whether a find should be served from a tree provider (Java agent,
+    /// .NET bridge) instead of real UIA, and if so resolves the provider's own root
+    /// element id to search from.
+    ///
+    /// Routes when: the context is already one of a provider's elements (continuing
+    /// a search inside that tree); or a fresh find whose window a provider both
+    /// <see cref="ITreeProvider.OwnsWindow"/>s and <see cref="ITreeProvider.AutoRouteStandardFind"/>s
+    /// (Java — a Java window's children live only in the agent tree). Opt-in-only
+    /// providers such as the .NET bridge are never auto-routed here.
     /// </summary>
-    private static bool TryRouteToJava(SessionState state, string? contextElementId, out JavaAgentElement? javaRoot)
+    internal static bool TryRouteToProvider(
+        SessionState state, string? contextElementId, out ITreeProvider provider, out string providerRootId)
     {
-        javaRoot = null;
-        if (!state.JavaSwingEnabled || state.Java == null) return false;
+        provider = null!;
+        providerRootId = null!;
 
-        // Context is already a Java element — search within Java subtree directly.
-        if (contextElementId != null && JavaAgentElement.IsJavaId(contextElementId))
+        if (contextElementId != null && state.Providers.TryResolve(contextElementId, out var byId))
         {
-            javaRoot = state.Java.GetById(contextElementId);
+            provider = byId;
+            providerRootId = contextElementId;
             return true;
         }
 
-        // Determine the UIA element that is the search root.
-        IUIAutomationElement? uiaRoot = null;
+        IntPtr hwnd;
+        string title;
         if (contextElementId != null)
         {
+            IUIAutomationElement uiaRoot;
             try { uiaRoot = state.GetElement(contextElementId); }
             catch { return false; }
+            hwnd = uiaRoot.CurrentNativeWindowHandle;
+            title = uiaRoot.get_CurrentName() ?? "";
         }
         else
         {
-            uiaRoot = state.GetLiveRoot();
+            var live = state.GetLiveRoot();
+            if (live == null) return false;
+            hwnd = live.CurrentNativeWindowHandle;
+            title = live.get_CurrentName() ?? "";
         }
 
-        if (uiaRoot == null) return false;
+        if (hwnd == IntPtr.Zero) return false;
+        if (!state.Providers.TryResolveWindow(hwnd, title, out var windowProvider)) return false;
+        if (!windowProvider.AutoRouteStandardFind) return false;
 
-        // Check if the UIA element sits on a Java window.
-        if (!state.IsJavaWindowElement(uiaRoot)) return false;
+        var rootId = windowProvider.GetWindowRootId(hwnd, title);
+        if (rootId == null) return false;
 
-        // Get the Java agent root for this Java window HWND.
-        // Pass the window title as a secondary match key for JVMs where HWND
-        // reflection is blocked by module encapsulation (Java 9+).
-        var hwnd = uiaRoot.CurrentNativeWindowHandle;
-        var title = uiaRoot.get_CurrentName() ?? "";
-        javaRoot = state.Java.GetWindowRoot(hwnd, title);
-        return javaRoot != null;
-    }
-
-    // ── .NET bridge routing ──────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Returns true when the find request should be routed to the .NET bridge —
-    /// only when the context is already a bridge element (a caller deliberately
-    /// continuing a search inside a subtree it already knows is bridge-only, e.g.
-    /// one returned by "windows: findElementViaDotnetBridge"). Standard find never
-    /// auto-routes into the bridge just because the current window happens to have
-    /// one attached — real UIA content stays reachable through the normal find
-    /// commands even on a bridge-attached window; the bridge is opt-in via the
-    /// dedicated *ViaDotnetBridge commands below (see FindElementDotnetBridge).
-    /// </summary>
-    private static bool TryRouteToDotnet(SessionState state, string? contextElementId, out BridgeAgentElement? dotnetRoot)
-    {
-        dotnetRoot = null;
-        if (!state.DotNetBridgeEnabled || state.DotNetBridge == null) return false;
-        if (contextElementId == null || !BridgeAgentElement.IsDotnetId(contextElementId)) return false;
-
-        dotnetRoot = state.DotNetBridge.GetById(contextElementId);
+        provider = windowProvider;
+        providerRootId = rootId;
         return true;
-    }
-
-    /// <summary>
-    /// Resolves the .NET bridge subtree a *ViaDotnetBridge command should search —
-    /// either the bridge element named by an explicit contextElementId (continuing a
-    /// search a caller already started in bridge-land), or the whole window's
-    /// reflected tree when no context is given. Internal (not private) so
-    /// PageSourceCommands.GetPageSourceDotnetBridge shares this instead of
-    /// re-implementing the same resolution.
-    /// </summary>
-    internal static BridgeAgentElement ResolveDotnetBridgeRoot(SessionState state, string? contextElementId)
-    {
-        if (!state.DotNetBridgeEnabled || state.DotNetBridge == null)
-        {
-            throw new InvalidOperationException(
-                "The .NET bridge is not attached to this session. Call 'windows: attachDotnetBridge' first.");
-        }
-
-        if (contextElementId != null)
-        {
-            if (!BridgeAgentElement.IsDotnetId(contextElementId))
-            {
-                throw new ArgumentException(
-                    "contextElementId must be a .NET bridge element id (returned by a *ViaDotnetBridge command) " +
-                    "— the bridge tree isn't correlated to the real UIA tree, so a plain UIA element id can't be used as a bridge search root.");
-            }
-            return state.DotNetBridge.GetById(contextElementId);
-        }
-
-        var uiaRoot = state.GetLiveRoot()
-            ?? throw new InvalidOperationException("No active window for this session.");
-        var hwnd = uiaRoot.CurrentNativeWindowHandle;
-        var title = uiaRoot.get_CurrentName() ?? "";
-        return state.DotNetBridge.GetWindowRoot(hwnd, title)
-            ?? throw new InvalidOperationException("Could not resolve the .NET bridge's window root for the current window.");
-    }
-
-    /// <summary>
-    /// "windows: findElementViaDotnetBridge" — searches the .NET bridge's own
-    /// reflected tree directly (its full tree, no correlation with real UIA),
-    /// bypassing UIA entirely. The explicit opt-in counterpart to FindElement,
-    /// for the specific elements a bridge-attached app's real UIA tree can't see.
-    /// </summary>
-    public static object? FindElementDotnetBridge(SessionState state, JsonElement? parameters)
-    {
-        var p = parameters ?? throw new ArgumentException("Parameters required.");
-        var conditionDto = JsonSerializer.Deserialize<ConditionDto>(p.GetProperty("condition").GetRawText())
-            ?? throw new ArgumentException("condition is required.");
-        string? contextElementId = p.TryGetProperty("contextElementId", out var ctxProp) && ctxProp.ValueKind == JsonValueKind.String
-            ? ctxProp.GetString()
-            : null;
-
-        var root = ResolveDotnetBridgeRoot(state, contextElementId);
-        return state.DotNetBridge!.FindFirst(root, conditionDto, "subtree");
-    }
-
-    /// <summary>"windows: findElementsViaDotnetBridge" — see FindElementDotnetBridge.</summary>
-    public static object? FindElementsDotnetBridge(SessionState state, JsonElement? parameters)
-    {
-        var p = parameters ?? throw new ArgumentException("Parameters required.");
-        var conditionDto = JsonSerializer.Deserialize<ConditionDto>(p.GetProperty("condition").GetRawText())
-            ?? throw new ArgumentException("condition is required.");
-        string? contextElementId = p.TryGetProperty("contextElementId", out var ctxProp) && ctxProp.ValueKind == JsonValueKind.String
-            ? ctxProp.GetString()
-            : null;
-
-        var root = ResolveDotnetBridgeRoot(state, contextElementId);
-        return state.DotNetBridge!.FindAll(root, conditionDto, "subtree");
     }
 
     // Descendant / subtree search is UIA's own scoped FindFirst/FindAll and nothing

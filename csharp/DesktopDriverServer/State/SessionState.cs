@@ -1,6 +1,4 @@
 using DesktopDriverServer.Diagnostics;
-using DesktopDriverServer.DotNet;
-using DesktopDriverServer.Java;
 using DesktopDriverServer.Plugins;
 using DesktopDriverServer.Uia3;
 using Wincore.ServerSdk;
@@ -45,15 +43,12 @@ public class SessionState : ISessionContext
 
     void ISessionContext.LogError(string message) => Console.Error.WriteLine(message);
 
-    // Java agent
-    internal JavaAgentService? Java { get; private set; }
-    public bool JavaSwingEnabled { get; private set; }
+    /// <summary>
+    /// PID of the process most recently launched on this session's behalf
+    /// (Appium <c>app</c> capability / <c>startProcess</c>). Default attach target
+    /// for a tree-provider plugin given no explicit pid/hwnd.
+    /// </summary>
     public int LastStartedProcessId { get; set; }
-
-    // .NET bridge
-    internal BridgeAgentService? DotNetBridge { get; private set; }
-    public bool DotNetBridgeEnabled { get; private set; }
-    public int DotNetBridgeTargetPid { get; private set; }
 
     // HWND of the attached top-level window (0 if the root is the desktop or
     // an element with no native handle). We re-resolve the root via
@@ -141,75 +136,6 @@ public class SessionState : ISessionContext
         return RootElement ?? throw new InvalidOperationException("Root element is not set.");
     }
 
-    /// <summary>
-    /// Connects to the Java agent running in the target JVM.
-    /// The agent must have been injected via -javaagent: at app startup.
-    /// </summary>
-    public void EnableJavaSwing(int? pid = null)
-    {
-        int targetPid = pid ?? LastStartedProcessId;
-        if (targetPid == 0)
-            throw new InvalidOperationException(
-                "No process PID available. Use appTopLevelWindow with javaSwing:true, or launch the app via Appium.");
-
-        Java ??= new JavaAgentService();
-        Java.Perf = PerfMetricsEnabled ? Perf : null;
-        Java.Connect(targetPid);
-        JavaSwingEnabled = true;
-    }
-
-    /// <summary>
-    /// Connects to the .NET bridge running in the target CLR process.
-    /// The bridge DLL must have been injected first via BridgeInjector.
-    /// </summary>
-    public void EnableDotnetBridge(int? pid = null)
-    {
-        int targetPid = pid ?? LastStartedProcessId;
-        if (targetPid == 0)
-            throw new InvalidOperationException(
-                "No process PID available. Use appTopLevelWindow with dotnetBridge:true.");
-
-        DotNetBridge ??= new BridgeAgentService();
-        DotNetBridge.Perf = PerfMetricsEnabled ? Perf : null;
-        DotNetBridge.Connect(targetPid);
-        DotNetBridgeEnabled = true;
-        DotNetBridgeTargetPid = targetPid;
-    }
-
-    /// <summary>
-    /// Returns true if the given UIA element's HWND is a Java window.
-    /// Uses WinAPI GetClassName — no JAB DLL required.
-    /// </summary>
-    public bool IsJavaWindowElement(IUIAutomationElement element)
-    {
-        if (!JavaSwingEnabled) return false;
-        try
-        {
-            var hwnd = element.CurrentNativeWindowHandle;
-            return hwnd != IntPtr.Zero && JavaWindowDetector.IsJavaWindow(hwnd);
-        }
-        catch { return false; }
-    }
-
-    /// <summary>
-    /// Returns true if the given UIA element's HWND belongs to the process the .NET bridge
-    /// was injected into. Unlike Java (which can auto-detect any Java window by class name),
-    /// the bridge is injected into one specific target process per session, so routing is
-    /// keyed on PID match rather than a generic "is this a .NET window" heuristic.
-    /// </summary>
-    public bool IsDotnetBridgeWindowElement(IUIAutomationElement element)
-    {
-        if (!DotNetBridgeEnabled) return false;
-        try
-        {
-            var hwnd = element.CurrentNativeWindowHandle;
-            if (hwnd == IntPtr.Zero) return false;
-            BridgeInjector.GetWindowThreadProcessId(hwnd, out uint pid);
-            return (int)pid == DotNetBridgeTargetPid;
-        }
-        catch { return false; }
-    }
-
     public void Initialize()
     {
         // UIA3 cache requests are passed per-call (not pushed thread-locally like
@@ -233,9 +159,6 @@ public class SessionState : ISessionContext
         CacheRequest = null;
         TreeWalker = null;
         Providers.Dispose();
-        Java?.Dispose();
-        Java = null;
-        JavaSwingEnabled = false;
         LastStartedProcessId = 0;
     }
 }

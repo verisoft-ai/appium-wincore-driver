@@ -14,10 +14,11 @@ public class JsonRpcServer
     private readonly SessionRecorder? _recorder;
     private readonly JsonSerializerOptions _jsonOptions;
 
-    public JsonRpcServer(string? recordingPath = null)
+    public JsonRpcServer(Plugins.PluginHost plugins, string? recordingPath = null)
     {
-        _dispatcher = new CommandDispatcher();
+        _dispatcher = new CommandDispatcher(plugins);
         _state = new SessionState();
+        plugins.CreateProviders(_state);
         _recorder = recordingPath != null ? new SessionRecorder(recordingPath) : null;
 
         _jsonOptions = new JsonSerializerOptions

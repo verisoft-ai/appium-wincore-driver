@@ -1,8 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
 using System.Xml;
-using DesktopDriverServer.DotNet;
-using DesktopDriverServer.Java;
 using DesktopDriverServer.Server;
 using DesktopDriverServer.State;
 using DesktopDriverServer.Uia3;
@@ -19,25 +17,26 @@ public static class PageSourceCommands
             return "<DummyRoot></DummyRoot>";
         }
 
-        // When Java Swing mode is active and the root is a Java window, build
-        // the page source from the Java agent accessibility tree instead of UIA
-        // (which sees the Java window as an opaque pane with no children).
-        if (state.JavaSwingEnabled && state.Java != null && state.IsJavaWindowElement(root))
+        // When a tree provider owns this window and auto-swaps page source (the Java
+        // agent — UIA sees a Java window as an opaque childless pane), build the page
+        // source from the provider's tree instead of UIA. Opt-in-only providers (the
+        // .NET bridge) never auto-swap; their tree is reached via the plugin's own
+        // "windows: getPageSourceViaDotnetBridge".
+        var rootHwnd = root.CurrentNativeWindowHandle;
+        var rootName = root.get_CurrentName() ?? "";
+        if (rootHwnd != IntPtr.Zero
+            && state.Providers.TryResolveWindow(rootHwnd, rootName, out var windowProvider)
+            && windowProvider.AutoSwapsPageSource)
         {
-            var hwnd = root.CurrentNativeWindowHandle;
-            var javaRoot = state.Java.GetWindowRoot(hwnd);
-            if (javaRoot != null)
+            var providerRootId = windowProvider.GetWindowRootId(rootHwnd, rootName);
+            if (providerRootId != null)
             {
-                var javaDoc = new XmlDocument();
-                state.Java.BuildXml(javaRoot, javaDoc, null);
-                return javaDoc.OuterXml;
+                var providerDoc = new XmlDocument();
+                windowProvider.BuildPageSourceXml(providerRootId, providerDoc, null);
+                return providerDoc.OuterXml;
             }
         }
 
-        // Unlike Java Swing above, the .NET bridge never auto-swaps standard page source —
-        // even on a bridge-attached window, getPageSource() always reflects real UIA only.
-        // Bridge-reflected content (custom-drawn control libraries like DevExpress that UIA
-        // sees as opaque panes) is reached explicitly via "windows: getPageSourceViaDotnetBridge".
         var xmlDoc = new XmlDocument();
 
         // Fast path: one BuildUpdatedCache COM call pulls the whole subtree + every
@@ -252,27 +251,6 @@ public static class PageSourceCommands
         {
             Console.Error.WriteLine($"[PageSource] cached node skipped: {ex.GetType().Name}: {ex.Message}");
         }
-    }
-
-    /// <summary>
-    /// "windows: getPageSourceViaDotnetBridge" — dumps the .NET bridge's own reflected
-    /// tree directly (its full tree, no correlation with real UIA), for the specific
-    /// content a bridge-attached app's real UIA tree can't see. See FindCommands'
-    /// FindElementDotnetBridge for the equivalent find-side opt-in.
-    /// </summary>
-    public static object? GetPageSourceDotnetBridge(SessionState state, JsonElement? parameters)
-    {
-        string? contextElementId = null;
-        if (parameters?.TryGetProperty("contextElementId", out var ctxProp) == true && ctxProp.ValueKind == JsonValueKind.String)
-        {
-            contextElementId = ctxProp.GetString();
-        }
-
-        var dotnetRoot = FindCommands.ResolveDotnetBridgeRoot(state, contextElementId);
-
-        var dotnetDoc = new XmlDocument();
-        state.DotNetBridge!.BuildXml(dotnetRoot, dotnetDoc, null);
-        return dotnetDoc.OuterXml;
     }
 
     private static void BuildPageSource(

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using DesktopDriverServer.Commands;
+using DesktopDriverServer.Plugins;
 using DesktopDriverServer.State;
 
 namespace DesktopDriverServer.Server;
@@ -8,7 +9,7 @@ public class CommandDispatcher
 {
     private readonly Dictionary<string, Func<SessionState, JsonElement?, object?>> _handlers;
 
-    public CommandDispatcher()
+    public CommandDispatcher(PluginHost? plugins = null)
     {
         _handlers = new Dictionary<string, Func<SessionState, JsonElement?, object?>>(StringComparer.OrdinalIgnoreCase)
         {
@@ -31,10 +32,7 @@ public class CommandDispatcher
             ["findElementFocused"] = FindCommands.FindElementFocused,
             ["saveRootElementToTable"] = FindCommands.SaveRootElementToTable,
             ["lookupElement"] = FindCommands.LookupElement,
-            ["findElementDotnetBridge"] = FindCommands.FindElementDotnetBridge,
-            ["findElementsDotnetBridge"] = FindCommands.FindElementsDotnetBridge,
             ["evaluateXPath"] = XPathCommands.EvaluateXPath,
-            ["evaluateXPathDotnetBridge"] = XPathCommands.EvaluateXPathDotnetBridge,
 
             // Element
             ["getProperty"] = ElementCommands.GetProperty,
@@ -73,7 +71,6 @@ public class CommandDispatcher
 
             // Page source & screenshots
             ["getPageSource"] = PageSourceCommands.GetPageSource,
-            ["getPageSourceDotnetBridge"] = PageSourceCommands.GetPageSourceDotnetBridge,
             ["getScreenshot"] = ScreenshotCommands.GetScreenshot,
             ["getElementScreenshot"] = ScreenshotCommands.GetElementScreenshot,
 
@@ -94,13 +91,9 @@ public class CommandDispatcher
             ["deleteFile"] = FileSystemCommands.DeleteFile,
             ["deleteFolder"] = FileSystemCommands.DeleteFolder,
 
-            // Java agent
-            ["enableJavaSwing"] = JabCommands.EnableJavaSwing,
-            ["injectJavaAgent"] = JabCommands.InjectJavaAgent,
-
-            // .NET bridge
-            ["enableDotnetBridge"] = DotNetBridgeCommands.EnableDotnetBridge,
-            ["injectDotnetBridge"] = DotNetBridgeCommands.InjectDotnetBridge,
+            // Tree-provider bridges (Java agent, .NET bridge) contribute their own
+            // commands — enableJavaSwing / injectJavaAgent / injectDotnetBridge /
+            // *ViaDotnetBridge — via IServerPlugin.GetCommands(); merged below.
 
             // Diagnostics
             ["getPerfMetrics"] = PerfCommands.GetPerfMetrics,
@@ -109,6 +102,17 @@ public class CommandDispatcher
             ["debug:ping"] = DiagnosticCommands.Ping,
             ["debug:inspectElementTable"] = DiagnosticCommands.InspectElementTable,
         };
+
+        if (plugins != null)
+        {
+            foreach (var (method, handler) in plugins.GetPluginCommands())
+            {
+                if (_handlers.ContainsKey(method))
+                    throw new InvalidOperationException(
+                        $"A plugin contributes command '{method}' which is already a core method.");
+                _handlers[method] = handler;
+            }
+        }
     }
 
     public bool HasHandler(string method) => _handlers.ContainsKey(method);

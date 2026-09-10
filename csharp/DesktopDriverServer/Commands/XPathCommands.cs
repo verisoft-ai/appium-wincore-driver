@@ -2,8 +2,6 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Xml;
-using DesktopDriverServer.DotNet;
-using DesktopDriverServer.Java;
 using DesktopDriverServer.Server;
 using DesktopDriverServer.State;
 using DesktopDriverServer.Uia3;
@@ -45,33 +43,12 @@ public static class XPathCommands
             contextElementId = ctxProp.GetString();
         }
 
-        // Bridge runtimes own their own tree — hand the raw expression to them.
-        if (contextElementId != null && JavaAgentElement.IsJavaId(contextElementId))
+        // A tree provider owns its own tree — hand it the raw expression. Covers a
+        // context that is already a provider element, and a context-less query on a
+        // window the provider auto-routes (Java windows). Same routing rule as find.
+        if (FindCommands.TryRouteToProvider(state, contextElementId, out var provider, out var providerRootId))
         {
-            if (state.Java == null) throw new InvalidOperationException("Java agent is not attached.");
-            return state.Java.EvaluateXPath(state.Java.GetById(contextElementId), expression, multiple);
-        }
-        if (contextElementId != null && BridgeAgentElement.IsDotnetId(contextElementId))
-        {
-            if (state.DotNetBridge == null) throw new InvalidOperationException("The .NET bridge is not attached.");
-            return state.DotNetBridge.EvaluateXPath(state.DotNetBridge.GetById(contextElementId), expression, multiple);
-        }
-
-        // Route a context-less query on a Java window to the Java agent, matching
-        // how FindCommands.TryRouteToJava treats the session root.
-        if (contextElementId == null && state.JavaSwingEnabled && state.Java != null)
-        {
-            var uiaRoot = state.GetLiveRoot();
-            if (uiaRoot != null && state.IsJavaWindowElement(uiaRoot))
-            {
-                var hwnd = uiaRoot.CurrentNativeWindowHandle;
-                var title = uiaRoot.get_CurrentName() ?? "";
-                var javaRoot = state.Java.GetWindowRoot(hwnd, title);
-                if (javaRoot != null)
-                {
-                    return state.Java.EvaluateXPath(javaRoot, expression, multiple);
-                }
-            }
+            return provider.EvaluateXPath(providerRootId, expression, multiple);
         }
 
         var root = contextElementId != null
@@ -87,25 +64,6 @@ public static class XPathCommands
             nodeId => model.Elements.TryGetValue(nodeId, out var el) ? state.TrySaveElementAndReturnId(el) : null);
 
         return multiple ? ids.ToArray() : (ids.Count > 0 ? (object)ids[0] : null);
-    }
-
-    /// <summary>
-    /// "windows: findElement(s)ViaDotnetBridge" with an XPath locator — evaluates the
-    /// expression against the .NET bridge's own reflected tree directly, the opt-in
-    /// counterpart to <see cref="EvaluateXPath"/> for content real UIA can't see.
-    /// </summary>
-    public static object? EvaluateXPathDotnetBridge(SessionState state, JsonElement? parameters)
-    {
-        var p = parameters ?? throw new ArgumentException("Parameters required.");
-        var expression = p.GetProperty("expression").GetString()
-            ?? throw new ArgumentException("expression is required.");
-        bool multiple = p.TryGetProperty("multiple", out var m) && m.ValueKind == JsonValueKind.True;
-        string? contextElementId = p.TryGetProperty("contextElementId", out var ctxProp) && ctxProp.ValueKind == JsonValueKind.String
-            ? ctxProp.GetString()
-            : null;
-
-        var root = FindCommands.ResolveDotnetBridgeRoot(state, contextElementId);
-        return state.DotNetBridge!.EvaluateXPath(root, expression, multiple);
     }
 }
 

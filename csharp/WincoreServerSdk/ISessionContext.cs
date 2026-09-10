@@ -18,6 +18,13 @@ public interface ISessionContext
     /// <summary>Name/title of the session's current root, or "" if unavailable.</summary>
     string GetLiveRootName();
 
+    /// <summary>
+    /// PID of the process most recently launched by the host on this session's
+    /// behalf (Appium <c>app</c> capability / <c>startProcess</c>), or 0. The
+    /// default target when an attach command is given no explicit pid/hwnd.
+    /// </summary>
+    int LastStartedProcessId { get; }
+
     /// <summary>True when the <c>perfMetrics</c> capability is on for this session.</summary>
     bool PerfEnabled { get; }
 
