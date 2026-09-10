@@ -1,6 +1,5 @@
 using System.Xml;
-using DesktopDriverServer.Commands;
-using DesktopDriverServer.Protocol;
+using Wincore.ServerSdk;
 using Xunit;
 
 namespace DesktopDriverServer.Tests;

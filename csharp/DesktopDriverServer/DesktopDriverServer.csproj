@@ -17,6 +17,10 @@
     <Version>1.4.0-dev.9</Version>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\WincoreServerSdk\WincoreServerSdk.csproj" />
+  </ItemGroup>
+
   <!-- UIA3 interop is hand-written in Uia3/UIA.cs via [ComImport] attributes.
        <COMReference> with tlbimp would be cleaner, but that MSBuild task isn't
        supported on the .NET SDK (error MSB4803) — only on .NET Framework

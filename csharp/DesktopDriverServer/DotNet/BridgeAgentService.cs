@@ -168,7 +168,7 @@ internal sealed class BridgeAgentService : IDisposable
             : BuildXPathNode(root, doc, nodes, ref counter, 0);
         doc.AppendChild(rootXml ?? doc.CreateElement("DummyRoot"));
 
-        var ids = DesktopDriverServer.Commands.XPathEvaluator.Evaluate(
+        var ids = XPathEvaluator.Evaluate(
             doc, null, "__bridgeNodeId", expression, multiple,
             nodeId => nodes.TryGetValue(nodeId, out var elId) ? elId : null);
 

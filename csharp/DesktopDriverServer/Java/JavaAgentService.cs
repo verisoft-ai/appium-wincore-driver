@@ -169,7 +169,7 @@ internal sealed class JavaAgentService : IDisposable
             : BuildXPathNode(root, doc, nodes, ref counter, 0);
         doc.AppendChild(rootXml ?? doc.CreateElement("DummyRoot"));
 
-        var ids = DesktopDriverServer.Commands.XPathEvaluator.Evaluate(
+        var ids = XPathEvaluator.Evaluate(
             doc, null, "__javaNodeId", expression, multiple,
             nodeId => nodes.TryGetValue(nodeId, out var elId) ? elId : null);
 

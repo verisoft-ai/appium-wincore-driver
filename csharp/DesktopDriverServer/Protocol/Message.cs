@@ -41,34 +41,6 @@ public class ErrorInfo
     public string Message { get; set; } = string.Empty;
 }
 
-public class ConditionDto
-{
-    [JsonPropertyName("type")]
-    public string Type { get; set; } = string.Empty;
-
-    [JsonPropertyName("property")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? Property { get; set; }
-
-    /// <summary>
-    /// Optional string match mode for a property condition: "contains" or "startsWith".
-    /// Absent means exact equality. Only the bridge agents (Java/.NET) evaluate this
-    /// natively; for UIA it degrades to a true-condition and the caller re-verifies
-    /// client-side (see ConditionBuilder.BuildPropertyCondition).
-    /// </summary>
-    [JsonPropertyName("match")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? Match { get; set; }
-
-    [JsonPropertyName("value")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public JsonElement? Value { get; set; }
-
-    [JsonPropertyName("conditions")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public ConditionDto[]? Conditions { get; set; }
-
-    [JsonPropertyName("condition")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public ConditionDto? Condition { get; set; }
-}
+// ConditionDto moved to the WincoreServerSdk project (Wincore.ServerSdk) — a server
+// plugin's ITreeProvider receives it directly. Re-exported via the global using in
+// GlobalUsings.cs so unqualified references across this project still resolve.

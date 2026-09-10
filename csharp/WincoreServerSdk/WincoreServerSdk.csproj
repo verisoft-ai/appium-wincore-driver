@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+
+    <AssemblyName>WincoreServerSdk</AssemblyName>
+    <RootNamespace>Wincore.ServerSdk</RootNamespace>
+
+    <!-- Packed to NuGet and consumed by out-of-repo bridge plugins
+         (appium-wincore-dotnet-bridge, appium-wincore-java-bridge). The major
+         version is the plugin contract version: PluginLoader refuses a plugin
+         whose declared SdkVersion has a different major. -->
+    <Version>1.0.0</Version>
+    <PackageId>WincoreServerSdk</PackageId>
+    <Description>Plugin contract for DesktopDriverServer (appium-wincore-driver): ITreeProvider, IServerPlugin, and the shared locator/xpath types a server plugin compiles against.</Description>
+    <Authors>Automate The Planet</Authors>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+</Project>

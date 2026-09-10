@@ -1,9 +1,9 @@
-namespace DesktopDriverServer.Protocol;
+namespace Wincore.ServerSdk;
 
 /// <summary>
 /// Thrown when a locator expression is syntactically invalid (e.g. malformed
-/// XPath). Maps to <see cref="ErrorCodes.InvalidSelector"/> on the wire, which the
-/// TS client turns into Appium's InvalidSelectorError.
+/// XPath). The host maps this to the wire error code <c>InvalidSelector</c>, which
+/// the TS client turns into Appium's InvalidSelectorError.
 /// </summary>
 public sealed class InvalidSelectorException : Exception
 {

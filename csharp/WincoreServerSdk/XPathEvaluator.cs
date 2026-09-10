@@ -1,8 +1,7 @@
 using System.Xml;
 using System.Xml.XPath;
-using DesktopDriverServer.Protocol;
 
-namespace DesktopDriverServer.Commands;
+namespace Wincore.ServerSdk;
 
 /// <summary>
 /// Shared back half of every <c>evaluateXPath</c> path (real UIA, the .NET bridge,
@@ -13,7 +12,8 @@ namespace DesktopDriverServer.Commands;
 ///
 /// Keeping this in one place means the result-set rules — document order, dedupe,
 /// single-vs-multiple, "a non-node-set result is not a locator", malformed-XPath
-/// handling — are defined once and unit-tested once.
+/// handling — are defined once and unit-tested once. Lives in the SDK so an
+/// out-of-repo tree provider can reuse the exact same semantics.
 /// </summary>
 public static class XPathEvaluator
 {
