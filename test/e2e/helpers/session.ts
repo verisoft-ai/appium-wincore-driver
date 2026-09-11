@@ -248,47 +248,6 @@ export async function createExplorerSession(extraCaps?: Record<string, unknown>)
 export const JAVAW_EXE_PATH = process.env.JAVA_HOME
     ? `${process.env.JAVA_HOME}\\bin\\javaw.exe`
     : 'javaw';
-export const JAVA_SWING_FORM_CLASSPATH = resolve(TEST_APPS_DIR, 'java-swing-form');
-
-/**
- * Launches the Java Swing test form as an external process (without Appium agent injection).
- * Returns the child process and its main window handle (decimal HWND string).
- * The caller is responsible for killing the process in afterAll.
- */
-export async function launchJavaSwingFormExternally(): Promise<{ proc: ChildProcess; hwnd: string }> {
-    const args = ['-cp', JAVA_SWING_FORM_CLASSPATH, 'TestForm'];
-    const proc = spawn(JAVAW_EXE_PATH, args, { detached: true, stdio: 'ignore' });
-
-    if (!proc.pid) {
-        throw new Error(`Failed to spawn Java process: ${JAVAW_EXE_PATH}`);
-    }
-
-    // Poll for MainWindowHandle to appear (window may take a moment to open)
-    const pid = proc.pid;
-    const deadline = Date.now() + 15_000;
-    let hwnd = '0';
-    while (Date.now() < deadline) {
-        try {
-            hwnd = execSync(
-                `powershell -Command "(Get-Process -Id ${pid} -ErrorAction Stop).MainWindowHandle"`,
-                { stdio: ['ignore', 'pipe', 'ignore'] }
-            ).toString().trim();
-        } catch {
-            hwnd = '0';
-        }
-        if (hwnd !== '0') {
-            break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 500));
-    }
-
-    if (hwnd === '0') {
-        proc.kill();
-        throw new Error(`Java Swing form window did not appear within 15s (pid=${pid})`);
-    }
-
-    return { proc, hwnd };
-}
 
 /**
  * Session attached to an already-running Java window (external launch), then the
