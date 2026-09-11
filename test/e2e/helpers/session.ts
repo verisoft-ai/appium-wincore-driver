@@ -311,18 +311,6 @@ export async function createJavaSwingAttachSession(hwnd: string, extraCaps?: Rec
     return driver;
 }
 
-/**
- * Launches the Java Swing test form externally, opens a session on its window, and
- * attaches the JAB agent. Returns the child process too — the caller must kill it.
- */
-export async function createJavaSwingFormSession(
-    extraCaps?: Record<string, unknown>,
-): Promise<{ driver: Browser; proc: ChildProcess }> {
-    const { proc, hwnd } = await launchJavaSwingFormExternally();
-    const driver = await createJavaSwingAttachSession(hwnd, extraCaps);
-    return { driver, proc };
-}
-
 export const JAVA_SWING_LARGE_CLASSPATH = resolve(TEST_APPS_DIR, 'java-swing-large');
 
 /**
