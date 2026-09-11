@@ -1,4 +1,4 @@
-import { AppiumDesktopDriver } from '../driver';
+import { AppiumWincoreDriver } from '../driver';
 
 const ISO_8061_FORMAT = 'yyyy-MM-ddTHH:mm:sszzz';
 
@@ -8,7 +8,7 @@ const ISO_8061_FORMAT = 'yyyy-MM-ddTHH:mm:sszzz';
  * @param format - A .NET custom date/time format string; defaults to an ISO 8601 format.
  * @returns The formatted date/time string.
  */
-export async function getDeviceTime(this: AppiumDesktopDriver, _sessionId?: string, format?: string): Promise<string> {
+export async function getDeviceTime(this: AppiumWincoreDriver, _sessionId?: string, format?: string): Promise<string> {
     const fmt = format ?? ISO_8061_FORMAT;
     // Use the C# server to get formatted date/time
     const script = `(Get-Date).ToString('${fmt.replace(/'/g, "''")}')`;

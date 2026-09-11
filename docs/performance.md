@@ -1,30 +1,30 @@
 # Performance benchmarks
 
 Tracks the cost of the driver's expensive tree-walk paths so regressions are visible
-and improvements are documented with numbers. Three suites, one method:
+and improvements are documented with numbers.
+
+The driver only benchmarks what it's actually aware of — core, native-UIA
+functionality. The Java-agent and .NET-bridge suites now live in their own plugin
+repos, since the driver has no knowledge of external plugins:
+
+- `java` → [appium-wincore-java-bridge/test/perf](https://github.com/y-schwab/appium-wincore-java-bridge/tree/main/test/perf)
+- `dotnet-bridge` → [appium-wincore-dotnet-bridge/test/perf](https://github.com/y-schwab/appium-wincore-dotnet-bridge/tree/main/test/perf)
 
 | suite | fixture | what it measures |
 | --- | --- | --- |
-| `java` | `java-swing-large` | in-JVM agent walk (newline-JSON RPC, one `getChildren` per node) |
 | `uia` | `wpf-large` | plain UIA walk (COM property reads + `FindAll` per node, in-process) |
-| `dotnet-bridge` | `winforms-large` | .NET bridge reflected-tree walk (same RPC channel shape as Java) |
 
-Each fixture feeds exactly one suite. `uia` runs against `wpf-large` because WPF
-has a **native** UIA provider (`AutomationPeer`) — that measures the COM tree-walk
-cost itself, not the MSAA→UIA bridge tax that `winforms-large` (no native provider)
-would fold in. `winforms-large` is kept solely for `dotnet-bridge`, where the bridge
-injects into the process and the UI framework is not the variable under test.
+`uia` runs against `wpf-large` because WPF has a **native** UIA provider
+(`AutomationPeer`) — that measures the COM tree-walk cost itself, not the MSAA→UIA
+bridge tax a WinForms fixture (no native provider) would fold in.
 
 ## Running
 
 ```bash
 # Needs: the sibling fixture repo checked out next to this one and built
-#   ../appium-wincore-test-apps  ->  npm run build:java-swing-large-test-app
-#                                    npm run build:wpf-large-test-app
-#                                    npm run build:winforms-large-test-app
+#   ../appium-wincore-test-apps  ->  npm run build:wpf-large-test-app
 # plus a running Appium server with this driver installed.
-npm run test:perf                     # all three suites
-npx vitest run --config vitest.perf.config.ts test/perf/uia-pagesource.perf.ts   # one suite
+npm run test:perf                     # the uia suite
 ```
 
 Knobs (env):
@@ -53,13 +53,10 @@ Counter labels by suite:
 
 | suite | labels | `count` is | `totalMs` is |
 | --- | --- | --- | --- |
-| `java` | `java.<rpcCommand>` (e.g. `java.getChildren`) | RPCs of that kind | wall-clock waiting on the agent |
-| `dotnet-bridge` | `dotnetBridge.<rpcCommand>` | RPCs of that kind | wall-clock waiting on the bridge |
 | `uia` | `uia.pageSource.node`, `uia.xpathModel.node` | nodes walked | summed per-node COM-walk time |
 
-For `java`/`dotnet-bridge`, `<walk>` is one `getChildren` RPC **per node**, so the
-`count` ≈ tree node count and `totalMs` ≈ the wall-clock the walk spent blocked on the
-round trip. That breakdown is the point: it makes the N+1 pattern measurable.
+The plugin repos' own perf suites use the same capability and log `java.<rpcCommand>` /
+`dotnetBridge.<rpcCommand>` counters respectively — see their `test/perf/` docs.
 
 ## Updating a baseline
 
@@ -71,6 +68,10 @@ To (re)baseline: run the suite on a quiet machine, copy p50 values from the resu
 file into `baseline`, set `referenceMachine`, commit.
 
 ## Results log
+
+Historical — recorded back when `java` and `dotnet-bridge` still ran from this repo.
+Their own results logs now live in their plugin repos; entries below are kept for
+record and are not reproducible here.
 
 `nodeCount=1500` (tree ≈ 1385 nodes). Reference machine: Intel Core 5 120U, 12 cores,
 17GB, Windows 11. All figures p50 of 5 iterations after 1 warm-up.

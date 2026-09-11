@@ -5,13 +5,12 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, extname, join } from 'node:path';
 import { MODIFY_FS_FEATURE } from '../constants';
-import { AppiumDesktopDriver } from '../driver';
+import { AppiumWincoreDriver } from '../driver';
 import { ClickType, Enum, Key } from '../enums';
 import { propertyCondition } from '../server/conditions';
 import { conditionToDto } from '../server/converter-bridge';
 import { convertStringToCondition } from '../powershell/converter';
 import type { RectResult } from '../server/protocol';
-import { locateElements, wrapForDotnetBridge, type LocateStrategy } from './find-via';
 import { sleep } from '../util';
 import { click } from './element';
 import { DEFAULT_EXT, ScreenRecorder, UploadOptions, uploadRecordedMedia } from './screen-recorder';
@@ -92,7 +91,7 @@ function coerceExecuteMethodArgs(script: string, args: any[]): any[] | null {
  * @param args - The arguments passed to the script/command.
  * @returns The result of the dispatched command.
  */
-export async function execute(this: AppiumDesktopDriver, script: string, args: any[]) {
+export async function execute(this: AppiumWincoreDriver, script: string, args: any[]) {
     if (script.startsWith(PLATFORM_COMMAND_PREFIX)) {
         const executeMethodArgs = coerceExecuteMethodArgs(script, args);
         if (executeMethodArgs === null) {
@@ -156,7 +155,7 @@ type CacheRequest = {
  * @param cacheRequest - The cache request fields to set; at least one must be provided.
  * @returns Resolves once the cache request has been applied.
  */
-export async function pushCacheRequest(this: AppiumDesktopDriver, cacheRequest: CacheRequest): Promise<void> {
+export async function pushCacheRequest(this: AppiumWincoreDriver, cacheRequest: CacheRequest): Promise<void> {
     if (Object.keys(cacheRequest).every((key) => cacheRequest[key] === undefined)) {
         throw new errors.InvalidArgumentError('At least one property of the cache request must be set.');
     }
@@ -180,11 +179,11 @@ export async function pushCacheRequest(this: AppiumDesktopDriver, cacheRequest: 
  * @param element - The element to invoke.
  * @returns Resolves once the pattern has been invoked.
  */
-export async function patternInvoke(this: AppiumDesktopDriver, element: Element): Promise<void> {
+export async function patternInvoke(this: AppiumWincoreDriver, element: Element): Promise<void> {
     await this.sendCommand('invokeElement', { elementId: element[W3C_ELEMENT_KEY] });
 }
 
-async function hasKeyboardFocus(this: AppiumDesktopDriver, elementId: string): Promise<boolean> {
+async function hasKeyboardFocus(this: AppiumWincoreDriver, elementId: string): Promise<boolean> {
     try {
         const result = await this.sendCommand('getProperty', { elementId, property: 'HasKeyboardFocus' });
         return result === true || String(result).toLowerCase() === 'true';
@@ -194,7 +193,7 @@ async function hasKeyboardFocus(this: AppiumDesktopDriver, elementId: string): P
     }
 }
 
-async function expandViaAltDown(this: AppiumDesktopDriver, elementId: string): Promise<void> {
+async function expandViaAltDown(this: AppiumWincoreDriver, elementId: string): Promise<void> {
     await this.sendCommand('setFocus', { elementId });
     await sleep(50);
 
@@ -224,7 +223,7 @@ async function expandViaAltDown(this: AppiumDesktopDriver, elementId: string): P
 // GetProperty / UIA.ExpandCollapseStatePropertyId). Returns undefined when the state can't
 // be read at all (e.g. Java elements, or a control with no real ExpandCollapsePattern) —
 // callers must treat that as "can't verify" rather than "failed".
-async function isExpanded(this: AppiumDesktopDriver, elementId: string): Promise<boolean | undefined> {
+async function isExpanded(this: AppiumWincoreDriver, elementId: string): Promise<boolean | undefined> {
     try {
         const state = await this.sendCommand('getProperty', { elementId, property: 'ExpandCollapseState' }) as string;
         return state === 'Expanded' || state === 'PartiallyExpanded';
@@ -234,7 +233,7 @@ async function isExpanded(this: AppiumDesktopDriver, elementId: string): Promise
     }
 }
 
-async function waitForExpanded(this: AppiumDesktopDriver, elementId: string): Promise<boolean | undefined> {
+async function waitForExpanded(this: AppiumWincoreDriver, elementId: string): Promise<boolean | undefined> {
     for (let attempt = 0; attempt < 3; attempt++) {
         const expanded = await isExpanded.call(this, elementId);
         if (expanded !== false) {
@@ -245,7 +244,7 @@ async function waitForExpanded(this: AppiumDesktopDriver, elementId: string): Pr
     return false;
 }
 
-async function waitForCollapsed(this: AppiumDesktopDriver, elementId: string): Promise<boolean | undefined> {
+async function waitForCollapsed(this: AppiumWincoreDriver, elementId: string): Promise<boolean | undefined> {
     for (let attempt = 0; attempt < 3; attempt++) {
         const expanded = await isExpanded.call(this, elementId);
         if (expanded !== true) {
@@ -263,7 +262,7 @@ async function waitForCollapsed(this: AppiumDesktopDriver, elementId: string): P
  * @param element - The element to expand.
  * @returns Resolves once the element has been expanded (or the fallback has been attempted).
  */
-export async function patternExpand(this: AppiumDesktopDriver, element: Element): Promise<void> {
+export async function patternExpand(this: AppiumWincoreDriver, element: Element): Promise<void> {
     const elementId = element[W3C_ELEMENT_KEY];
 
     try {
@@ -294,7 +293,7 @@ export async function patternExpand(this: AppiumDesktopDriver, element: Element)
  * @param element - The element to collapse.
  * @returns Resolves once the element has been collapsed (or the fallback has been attempted).
  */
-export async function patternCollapse(this: AppiumDesktopDriver, element: Element): Promise<void> {
+export async function patternCollapse(this: AppiumWincoreDriver, element: Element): Promise<void> {
     const elementId = element[W3C_ELEMENT_KEY];
 
     try {
@@ -318,7 +317,7 @@ export async function patternCollapse(this: AppiumDesktopDriver, element: Elemen
  * @param element - The element to scroll into view.
  * @returns Resolves once the pattern has been triggered.
  */
-export async function patternScrollIntoView(this: AppiumDesktopDriver, element: Element): Promise<void> {
+export async function patternScrollIntoView(this: AppiumWincoreDriver, element: Element): Promise<void> {
     await this.sendCommand('scrollElementIntoView', { elementId: element[W3C_ELEMENT_KEY] });
 }
 
@@ -327,7 +326,7 @@ export async function patternScrollIntoView(this: AppiumDesktopDriver, element: 
  * @param element - The container element to check.
  * @returns True if multiple selection is allowed.
  */
-export async function patternIsMultiple(this: AppiumDesktopDriver, element: Element): Promise<boolean> {
+export async function patternIsMultiple(this: AppiumWincoreDriver, element: Element): Promise<boolean> {
     const result = await this.sendCommand('isMultipleSelect', { elementId: element[W3C_ELEMENT_KEY] });
     return result === true || String(result).toLowerCase() === 'true';
 }
@@ -337,7 +336,7 @@ export async function patternIsMultiple(this: AppiumDesktopDriver, element: Elem
  * @param element - The container element to query.
  * @returns The selected element.
  */
-export async function patternGetSelectedItem(this: AppiumDesktopDriver, element: Element): Promise<Element> {
+export async function patternGetSelectedItem(this: AppiumWincoreDriver, element: Element): Promise<Element> {
     const result = await this.sendCommand('getSelectedElements', { elementId: element[W3C_ELEMENT_KEY] }) as string[];
     const elId = result?.[0];
 
@@ -353,7 +352,7 @@ export async function patternGetSelectedItem(this: AppiumDesktopDriver, element:
  * @param element - The container element to query.
  * @returns All selected elements.
  */
-export async function patternGetAllSelectedItems(this: AppiumDesktopDriver, element: Element): Promise<Element[]> {
+export async function patternGetAllSelectedItems(this: AppiumWincoreDriver, element: Element): Promise<Element[]> {
     const result = await this.sendCommand('getSelectedElements', { elementId: element[W3C_ELEMENT_KEY] }) as string[];
     return (result ?? []).map((elId) => ({ [W3C_ELEMENT_KEY]: elId }));
 }
@@ -363,7 +362,7 @@ export async function patternGetAllSelectedItems(this: AppiumDesktopDriver, elem
  * @param element - The element to add to the selection.
  * @returns Resolves once the pattern has been triggered.
  */
-export async function patternAddToSelection(this: AppiumDesktopDriver, element: Element): Promise<void> {
+export async function patternAddToSelection(this: AppiumWincoreDriver, element: Element): Promise<void> {
     await this.sendCommand('addToSelection', { elementId: element[W3C_ELEMENT_KEY] });
 }
 
@@ -372,7 +371,7 @@ export async function patternAddToSelection(this: AppiumDesktopDriver, element: 
  * @param element - The element to remove from the selection.
  * @returns Resolves once the pattern has been triggered.
  */
-export async function patternRemoveFromSelection(this: AppiumDesktopDriver, element: Element): Promise<void> {
+export async function patternRemoveFromSelection(this: AppiumWincoreDriver, element: Element): Promise<void> {
     await this.sendCommand('removeFromSelection', { elementId: element[W3C_ELEMENT_KEY] });
 }
 
@@ -381,7 +380,7 @@ export async function patternRemoveFromSelection(this: AppiumDesktopDriver, elem
  * @param element - The element to select.
  * @returns Resolves once the pattern has been triggered.
  */
-export async function patternSelect(this: AppiumDesktopDriver, element: Element): Promise<void> {
+export async function patternSelect(this: AppiumWincoreDriver, element: Element): Promise<void> {
     await this.sendCommand('selectElement', { elementId: element[W3C_ELEMENT_KEY] });
 }
 
@@ -390,7 +389,7 @@ export async function patternSelect(this: AppiumDesktopDriver, element: Element)
  * @param element - The element to toggle.
  * @returns Resolves once the pattern has been triggered.
  */
-export async function patternToggle(this: AppiumDesktopDriver, element: Element): Promise<void> {
+export async function patternToggle(this: AppiumWincoreDriver, element: Element): Promise<void> {
     await this.sendCommand('toggleElement', { elementId: element[W3C_ELEMENT_KEY] });
 }
 
@@ -401,7 +400,7 @@ export async function patternToggle(this: AppiumDesktopDriver, element: Element)
  * @param value - The string (or numeric-string, for RangeValue) value to set.
  * @returns Resolves once the value has been set.
  */
-export async function patternSetValue(this: AppiumDesktopDriver, element: Element, value: string): Promise<void> {
+export async function patternSetValue(this: AppiumWincoreDriver, element: Element, value: string): Promise<void> {
     try {
         await this.sendCommand('setElementValue', { elementId: element[W3C_ELEMENT_KEY], value });
     } catch (err) {
@@ -419,7 +418,7 @@ export async function patternSetValue(this: AppiumDesktopDriver, element: Elemen
  * @param element - The element to read from.
  * @returns The element's value.
  */
-export async function patternGetValue(this: AppiumDesktopDriver, element: Element): Promise<string> {
+export async function patternGetValue(this: AppiumWincoreDriver, element: Element): Promise<string> {
     return await this.sendCommand('getElementValue', { elementId: element[W3C_ELEMENT_KEY] }) as string;
 }
 
@@ -428,7 +427,7 @@ export async function patternGetValue(this: AppiumDesktopDriver, element: Elemen
  * @param element - The window element to maximize.
  * @returns Resolves once the pattern has been triggered.
  */
-export async function patternMaximize(this: AppiumDesktopDriver, element: Element): Promise<void> {
+export async function patternMaximize(this: AppiumWincoreDriver, element: Element): Promise<void> {
     await this.sendCommand('maximizeWindow', { elementId: element[W3C_ELEMENT_KEY] });
 }
 
@@ -437,7 +436,7 @@ export async function patternMaximize(this: AppiumDesktopDriver, element: Elemen
  * @param element - The window element to minimize.
  * @returns Resolves once the pattern has been triggered.
  */
-export async function patternMinimize(this: AppiumDesktopDriver, element: Element): Promise<void> {
+export async function patternMinimize(this: AppiumWincoreDriver, element: Element): Promise<void> {
     await this.sendCommand('minimizeWindow', { elementId: element[W3C_ELEMENT_KEY] });
 }
 
@@ -446,7 +445,7 @@ export async function patternMinimize(this: AppiumDesktopDriver, element: Elemen
  * @param element - The window element to restore.
  * @returns Resolves once the pattern has been triggered.
  */
-export async function patternRestore(this: AppiumDesktopDriver, element: Element): Promise<void> {
+export async function patternRestore(this: AppiumWincoreDriver, element: Element): Promise<void> {
     await this.sendCommand('restoreWindow', { elementId: element[W3C_ELEMENT_KEY] });
 }
 
@@ -455,7 +454,7 @@ export async function patternRestore(this: AppiumDesktopDriver, element: Element
  * @param element - The window element to close.
  * @returns Resolves once the pattern has been triggered.
  */
-export async function patternClose(this: AppiumDesktopDriver, element: Element): Promise<void> {
+export async function patternClose(this: AppiumWincoreDriver, element: Element): Promise<void> {
     await this.sendCommand('closeWindow', { elementId: element[W3C_ELEMENT_KEY] });
 }
 
@@ -463,7 +462,7 @@ export async function patternClose(this: AppiumDesktopDriver, element: Element):
  * `windows: closeApp` execute-method handler; delegates to {@link closeApp}.
  * @returns Resolves once the app window has been closed.
  */
-export async function windowsCloseApp(this: AppiumDesktopDriver): Promise<void> {
+export async function windowsCloseApp(this: AppiumWincoreDriver): Promise<void> {
     return await this.closeApp();
 }
 
@@ -475,7 +474,7 @@ export async function windowsCloseApp(this: AppiumDesktopDriver): Promise<void> 
  * @returns Resolves once the root element has been switched.
  */
 export async function windowsSwitchToWindowByTitle(
-    this: AppiumDesktopDriver,
+    this: AppiumWincoreDriver,
     args?: { title?: string; exact?: boolean },
 ): Promise<void> {
     if (!args?.title) {
@@ -498,7 +497,7 @@ export async function windowsGetWindows(): Promise<Array<{ handle: string; title
  * `appium:perfMetrics` capability; otherwise `enabled` is false and `metrics` is empty.
  * @returns `{ enabled, metrics: { totalCalls, totalMs, byLabel: { <label>: { count, totalMs } } } }`.
  */
-export async function windowsGetPerfMetrics(this: AppiumDesktopDriver): Promise<unknown> {
+export async function windowsGetPerfMetrics(this: AppiumWincoreDriver): Promise<unknown> {
     return this.sendCommand('getPerfMetrics', {});
 }
 
@@ -507,7 +506,7 @@ export async function windowsGetPerfMetrics(this: AppiumDesktopDriver): Promise<
  * counters. A benchmark brackets each operation it measures with a reset so the counts
  * that follow belong to that operation alone.
  */
-export async function windowsResetPerfMetrics(this: AppiumDesktopDriver): Promise<void> {
+export async function windowsResetPerfMetrics(this: AppiumWincoreDriver): Promise<void> {
     await this.sendCommand('resetPerfMetrics', {});
 }
 
@@ -515,7 +514,7 @@ export async function windowsResetPerfMetrics(this: AppiumDesktopDriver): Promis
  * `windows: launchApp` execute-method handler; delegates to {@link launchApp}.
  * @returns Resolves once the app's window has become the session root.
  */
-export async function windowsLaunchApp(this: AppiumDesktopDriver): Promise<void> {
+export async function windowsLaunchApp(this: AppiumWincoreDriver): Promise<void> {
     return await this.launchApp();
 }
 
@@ -524,7 +523,7 @@ export async function windowsLaunchApp(this: AppiumDesktopDriver): Promise<void>
  * @param element - The element to focus.
  * @returns Resolves once focus has been set.
  */
-export async function focusElement(this: AppiumDesktopDriver, element: Element): Promise<void> {
+export async function focusElement(this: AppiumWincoreDriver, element: Element): Promise<void> {
     await this.sendCommand('setFocus', { elementId: element[W3C_ELEMENT_KEY] });
 }
 
@@ -534,7 +533,7 @@ export async function focusElement(this: AppiumDesktopDriver, element: Element):
  * bare value or wrapped in an options object; defaults to `plaintext`.
  * @returns The base64-encoded clipboard content.
  */
-export async function getClipboardBase64(this: AppiumDesktopDriver, contentType?: ContentType | { contentType?: ContentType }): Promise<string> {
+export async function getClipboardBase64(this: AppiumWincoreDriver, contentType?: ContentType | { contentType?: ContentType }): Promise<string> {
     if (!contentType || (contentType && typeof contentType === 'object')) {
         contentType = contentType?.contentType ?? ContentType.PLAINTEXT;
     }
@@ -556,7 +555,7 @@ export async function getClipboardBase64(this: AppiumDesktopDriver, contentType?
  * @param args.b64Content - Base64-encoded content to write to the clipboard.
  * @returns An empty string on success.
  */
-export async function setClipboardFromBase64(this: AppiumDesktopDriver, args: { contentType?: ContentType, b64Content: string }): Promise<string> {
+export async function setClipboardFromBase64(this: AppiumWincoreDriver, args: { contentType?: ContentType, b64Content: string }): Promise<string> {
     if (!args || typeof args !== 'object' || !args.b64Content) {
         throw new errors.InvalidArgumentError(`'b64Content' must be provided.`);
     }
@@ -580,7 +579,7 @@ export async function setClipboardFromBase64(this: AppiumDesktopDriver, args: { 
  * @param script - The script to run, as a raw string or wrapped in `{ script }`/`{ command }`.
  * @returns The script's output.
  */
-export async function executePowerShellScript(this: AppiumDesktopDriver, script: string | { script: string, command: undefined } | { script: undefined, command: string }): Promise<string> {
+export async function executePowerShellScript(this: AppiumWincoreDriver, script: string | { script: string, command: undefined } | { script: undefined, command: string }): Promise<string> {
     if (script && typeof script === 'object') {
         if (script.script) {
             script = script.script;
@@ -605,7 +604,7 @@ export async function executePowerShellScript(this: AppiumDesktopDriver, script:
  * @param keyActions.forceUnicode - Whether to force Unicode key input for text actions.
  * @returns Resolves once all key actions have been sent.
  */
-export async function executeKeys(this: AppiumDesktopDriver, keyActions: { actions: KeyAction | KeyAction[], forceUnicode: boolean }) {
+export async function executeKeys(this: AppiumWincoreDriver, keyActions: { actions: KeyAction | KeyAction[], forceUnicode: boolean }) {
     if (!Array.isArray(keyActions.actions)) {
         keyActions.actions = [keyActions.actions];
     }
@@ -664,7 +663,7 @@ export async function executeKeys(this: AppiumDesktopDriver, keyActions: { actio
     }
 }
 
-async function getElementPos(driver: AppiumDesktopDriver, elementId: string, offsetX?: number, offsetY?: number): Promise<[number, number]> {
+async function getElementPos(driver: AppiumWincoreDriver, elementId: string, offsetX?: number, offsetY?: number): Promise<[number, number]> {
     const exists = await driver.sendCommand('lookupElement', { elementId }) as boolean;
     if (!exists) {
         const elId = await driver.sendCommand('findElement', {
@@ -699,7 +698,7 @@ async function getElementPos(driver: AppiumDesktopDriver, elementId: string, off
  * @param clickArgs.interClickDelayMs - Delay between repeated clicks.
  * @returns Resolves once the click(s) have been performed.
  */
-export async function executeClick(this: AppiumDesktopDriver, clickArgs: {
+export async function executeClick(this: AppiumWincoreDriver, clickArgs: {
     elementId?: string,
     x?: number,
     y?: number,
@@ -781,7 +780,7 @@ export async function executeClick(this: AppiumDesktopDriver, clickArgs: {
  * @param hoverArgs.durationMs - Duration of the cursor move to the end position.
  * @returns Resolves once the hover move has completed.
  */
-export async function executeHover(this: AppiumDesktopDriver, hoverArgs: {
+export async function executeHover(this: AppiumWincoreDriver, hoverArgs: {
     startElementId?: string,
     startX?: number,
     startY?: number,
@@ -849,7 +848,7 @@ export async function executeHover(this: AppiumDesktopDriver, hoverArgs: {
  * @param scrollArgs.modifierKeys - Modifier key(s) held during the scroll.
  * @returns Resolves once the scroll has been performed.
  */
-export async function executeScroll(this: AppiumDesktopDriver, scrollArgs: {
+export async function executeScroll(this: AppiumWincoreDriver, scrollArgs: {
     elementId?: string,
     x?: number,
     y?: number,
@@ -910,7 +909,7 @@ export async function executeScroll(this: AppiumDesktopDriver, scrollArgs: {
  * @param args.forceRestart - Whether to stop and discard an in-progress recording before starting.
  * @returns Resolves once recording has started.
  */
-export async function startRecordingScreen(this: AppiumDesktopDriver, args?: {
+export async function startRecordingScreen(this: AppiumWincoreDriver, args?: {
     outputPath?: string,
     timeLimit?: number,
     videoFps?: number,
@@ -955,7 +954,7 @@ export async function startRecordingScreen(this: AppiumDesktopDriver, args?: {
             );
         }
     }
-    const videoPath = outputPath ?? join(tmpdir(), `appiumdesktop-recording-${Date.now()}.${DEFAULT_EXT}`);
+    const videoPath = outputPath ?? join(tmpdir(), `appiumwincore-recording-${Date.now()}.${DEFAULT_EXT}`);
     this._screenRecorder = new ScreenRecorder(videoPath, this, {
         fps: fps !== undefined ? parseInt(String(fps), 10) : undefined,
         timeLimit: timeLimit !== undefined ? parseInt(String(timeLimit), 10) : undefined,
@@ -981,7 +980,7 @@ export async function startRecordingScreen(this: AppiumDesktopDriver, args?: {
  * @returns Base64-encoded video content, an upload response, or an empty string if no
  * recording was in progress.
  */
-export async function stopRecordingScreen(this: AppiumDesktopDriver, args?: UploadOptions): Promise<string> {
+export async function stopRecordingScreen(this: AppiumWincoreDriver, args?: UploadOptions): Promise<string> {
     if (!this._screenRecorder) {
         this.log.debug('No screen recording has been started. Doing nothing');
         return '';
@@ -1004,7 +1003,7 @@ export async function stopRecordingScreen(this: AppiumDesktopDriver, args?: Uplo
  * @param args.path - Path of the file to delete.
  * @returns Resolves once the file has been deleted.
  */
-export async function deleteFile(this: AppiumDesktopDriver, args: { path: string }): Promise<void> {
+export async function deleteFile(this: AppiumWincoreDriver, args: { path: string }): Promise<void> {
     this.assertFeatureEnabled(MODIFY_FS_FEATURE);
     if (!args || typeof args !== 'object' || !args.path) {
         throw new errors.InvalidArgumentError("'path' must be provided.");
@@ -1019,7 +1018,7 @@ export async function deleteFile(this: AppiumDesktopDriver, args: { path: string
  * @param args.recursive - Whether to delete non-empty folders recursively (default true).
  * @returns Resolves once the folder has been deleted.
  */
-export async function deleteFolder(this: AppiumDesktopDriver, args: { path: string, recursive?: boolean }): Promise<void> {
+export async function deleteFolder(this: AppiumWincoreDriver, args: { path: string, recursive?: boolean }): Promise<void> {
     this.assertFeatureEnabled(MODIFY_FS_FEATURE);
     if (!args || typeof args !== 'object' || !args.path) {
         throw new errors.InvalidArgumentError("'path' must be provided.");
@@ -1041,7 +1040,7 @@ export async function deleteFolder(this: AppiumDesktopDriver, args: { path: stri
  * @param dragArgs.button - Which mouse button to hold down during the drag.
  * @returns Resolves once the click-and-drag has completed.
  */
-export async function executeClickAndDrag(this: AppiumDesktopDriver, dragArgs: {
+export async function executeClickAndDrag(this: AppiumWincoreDriver, dragArgs: {
     startElementId?: string,
     startX?: number,
     startY?: number,
@@ -1122,7 +1121,7 @@ export async function executeClickAndDrag(this: AppiumDesktopDriver, dragArgs: {
  * @param args.format - A .NET custom date/time format string; defaults to ISO 8601.
  * @returns The formatted date/time string.
  */
-export async function windowsGetDeviceTime(this: AppiumDesktopDriver, args?: { format?: string }): Promise<string> {
+export async function windowsGetDeviceTime(this: AppiumWincoreDriver, args?: { format?: string }): Promise<string> {
     return this.getDeviceTime(undefined, args?.format);
 }
 
@@ -1131,7 +1130,7 @@ export async function windowsGetDeviceTime(this: AppiumDesktopDriver, args?: { f
  * the session's root window.
  * @returns The root window as an element reference.
  */
-export async function getWindowElement(this: AppiumDesktopDriver): Promise<Element> {
+export async function getWindowElement(this: AppiumWincoreDriver): Promise<Element> {
     const elementId = await this.sendCommand('saveRootElementToTable', {}) as string;
     if (!elementId) {
         throw new errors.NoSuchWindowError('No active app window is found for this session.');
@@ -1146,7 +1145,7 @@ export async function getWindowElement(this: AppiumDesktopDriver): Promise<Eleme
  * @param base64Data - Base64-encoded file content to write.
  * @returns Resolves once the file has been written.
  */
-export async function pushFile(this: AppiumDesktopDriver, remotePath: string, base64Data: string): Promise<void> {
+export async function pushFile(this: AppiumWincoreDriver, remotePath: string, base64Data: string): Promise<void> {
     this.assertFeatureEnabled(MODIFY_FS_FEATURE);
     if (!remotePath) {
         throw new errors.InvalidArgumentError("'remotePath' must be provided.");
@@ -1165,7 +1164,7 @@ export async function pushFile(this: AppiumDesktopDriver, remotePath: string, ba
  * @param remotePath - Path of the file to read.
  * @returns The file content, base64-encoded.
  */
-export async function pullFile(this: AppiumDesktopDriver, remotePath: string): Promise<string> {
+export async function pullFile(this: AppiumWincoreDriver, remotePath: string): Promise<string> {
     this.assertFeatureEnabled(MODIFY_FS_FEATURE);
     if (!remotePath) {
         throw new errors.InvalidArgumentError("'remotePath' must be provided.");
@@ -1179,7 +1178,7 @@ export async function pullFile(this: AppiumDesktopDriver, remotePath: string): P
  * machine running the session.
  * @returns The list of monitors and their properties, as reported by the C# server.
  */
-export async function windowsGetMonitors(this: AppiumDesktopDriver): Promise<object[]> {
+export async function windowsGetMonitors(this: AppiumWincoreDriver): Promise<object[]> {
     return await this.sendCommand('getMonitors', {}) as object[];
 }
 
@@ -1191,93 +1190,8 @@ export function executeGetDpiScale(): number {
     return getResolutionScalingFactor();
 }
 
-/**
- * `windows: attachJavaSwing` execute-method handler: injects the Java Access Bridge agent
- * into the JVM owning the session's current root window (resolved by the C# server from the
- * root element's HWND) and connects to it.
- * @param opts.jdkPath - Path to the JDK to use for the injection; defaults to the `jdkPath`
- * capability.
- * @returns Resolves once the Java agent has been injected and connected.
- */
-export async function executeAttachJavaSwing(this: AppiumDesktopDriver, opts: { jdkPath?: string } = {}): Promise<void> {
-    // Injects the Java agent into the JVM owning the current root window,
-    // then connects. The C# side resolves the PID from the root element's HWND.
-    const jdkPath = opts.jdkPath ?? this.caps.jdkPath;
-    await this.sendCommand('injectJavaAgent', { jdkPath });
-}
-
-/**
- * `windows: attachDotnetBridge` execute-method handler: injects the .NET bridge into the CLR
- * owning the session's current root window (resolved by the C# server from the root element's
- * HWND) and connects to it.
- * @returns Resolves once the .NET bridge has been injected and connected.
- */
-export async function executeAttachDotnetBridge(this: AppiumDesktopDriver): Promise<void> {
-    // Injects the bridge DLL into the process owning the current root window,
-    // then connects. The C# side resolves the PID from the root element's HWND.
-    await this.sendCommand('injectDotnetBridge', {});
-}
-
-/**
- * `windows: findElementViaDotnetBridge` execute-method handler: searches the .NET
- * bridge's own reflected tree directly (its full tree, no correlation with real UIA),
- * bypassing UIA entirely. Standard `findElement`/`getPageSource` never auto-consult the
- * bridge even when one is attached — real UIA content stays reachable through them as
- * always — so this (and its plural/page-source siblings below) is the explicit opt-in
- * for the specific elements a bridge-attached app's real UIA tree can't see. The
- * element reference this returns works with every other `windows:` command
- * (invoke/select/expand/setValue/click/...) exactly like one from standard find — those
- * already dispatch on the `dotnet:`/`dotnetcore:` id prefix regardless of how the
- * element was found.
- * @param args.using - Locator strategy: `xpath`, `accessibility id`, `name`,
- * `class name`, `tag name`, `id`, or `-windows uiautomation`.
- * @param args.value - The locator value for the chosen strategy.
- * @param args.contextElementId - Optional .NET bridge element id (from a prior
- * `*ViaDotnetBridge` call) to search within instead of the whole window.
- * @returns The matching element.
- * @throws {NoSuchElementError} If no element matches — same contract as standard
- * `findElement` (the plural sibling returns `[]` instead, also matching standard).
- */
-export async function findElementViaDotnetBridge(
-    this: AppiumDesktopDriver,
-    args: { using: LocateStrategy, value: string, contextElementId?: string }
-): Promise<Element> {
-    return await locateElements(
-        args.using, args.value, false, args.contextElementId, wrapForDotnetBridge(this.sendCommand.bind(this))
-    );
-}
-
-/**
- * `windows: findElementsViaDotnetBridge` execute-method handler — see
- * {@link findElementViaDotnetBridge}.
- * @param args.using - Locator strategy, same options as {@link findElementViaDotnetBridge}.
- * @param args.value - The locator value for the chosen strategy.
- * @param args.contextElementId - Optional .NET bridge element id to search within.
- * @returns All matching elements (empty array if none).
- */
-export async function findElementsViaDotnetBridge(
-    this: AppiumDesktopDriver,
-    args: { using: LocateStrategy, value: string, contextElementId?: string }
-): Promise<Element[]> {
-    return await locateElements(
-        args.using, args.value, true, args.contextElementId, wrapForDotnetBridge(this.sendCommand.bind(this))
-    );
-}
-
-/**
- * `windows: getPageSourceViaDotnetBridge` execute-method handler: dumps the .NET
- * bridge's own reflected tree directly, for the specific content a bridge-attached
- * app's real UIA tree can't see. Standard `getPageSource()` always reflects real UIA
- * only, even on a bridge-attached window — see {@link findElementViaDotnetBridge}.
- * @param args.contextElementId - Optional .NET bridge element id to scope the dump to
- * a subtree instead of the whole window.
- * @returns The bridge tree as XML.
- */
-export async function getPageSourceViaDotnetBridge(
-    this: AppiumDesktopDriver,
-    args?: { contextElementId?: string }
-): Promise<string> {
-    return await this.sendCommand('getPageSourceDotnetBridge', {
-        contextElementId: args?.contextElementId ?? null,
-    }) as string;
-}
+// The Java Access Bridge and .NET (WinForms/WPF) bridges are entirely external:
+// appium-wincore-java-bridge contributes windows: attachJavaSwing and
+// appium-wincore-dotnet-bridge contributes windows: attachDotnetBridge +
+// windows: *ViaDotnetBridge, each with its own WincoreServer tree provider.
+// This driver has no bridge code or bridge capabilities.

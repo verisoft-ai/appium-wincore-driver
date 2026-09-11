@@ -551,7 +551,7 @@ const driver = await remote({
   path: '/',
   capabilities: {
     platformName: 'Windows',
-    'appium:automationName': 'DesktopDriver',
+    'appium:automationName': 'Wincore',
     'appium:app':
       'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
     'appium:appArguments':
@@ -573,7 +573,7 @@ For apps that embed a WebView2 control, omit `appArguments` and
 ```js
 capabilities: {
   platformName: 'Windows',
-  'appium:automationName': 'DesktopDriver',
+  'appium:automationName': 'Wincore',
   'appium:app': 'C:\\Path\\To\\YourApp.exe',
   'appium:webviewEnabled': true,
 }
@@ -755,7 +755,7 @@ IE and non-IE windows can be used in the same session:
 ```js
 // Start a plain desktop session
 const driver = await remote({ capabilities: { platformName: 'Windows',
-  'appium:automationName': 'DesktopDriver', 'appium:app': 'Root' } });
+  'appium:automationName': 'Wincore', 'appium:app': 'Root' } });
 
 // Switch to IE — IE Bridge activates automatically
 await driver.executeScript('windows: switchToWindowByTitle', [{ title: 'Internet Explorer' }]);
@@ -853,7 +853,7 @@ No `JAVA_HOME` required.
 ```js
 capabilities: {
   platformName: 'Windows',
-  'appium:automationName': 'DesktopDriver',
+  'appium:automationName': 'Wincore',
   'appium:app': `${process.env.JAVA_HOME}\\bin\\javaw.exe`,
   'appium:appArguments': '-cp C:\\MyApp\\classes MainClass',
   'appium:javaSwing': true,
@@ -871,7 +871,7 @@ creation via the Java Attach API.
 ```js
 capabilities: {
   platformName: 'Windows',
-  'appium:automationName': 'DesktopDriver',
+  'appium:automationName': 'Wincore',
   'appium:appTopLevelWindow': hwnd,   // decimal HWND string
   'appium:javaSwing': true,
   'appium:shouldCloseApp': false,
@@ -898,7 +898,7 @@ switching to Java mode.
 // 1. Create a plain UIA session — can start on any window
 const driver = await remote({ ..., capabilities: {
   platformName: 'Windows',
-  'appium:automationName': 'DesktopDriver',
+  'appium:automationName': 'Wincore',
   'appium:appTopLevelWindow': hwnd,
   'appium:shouldCloseApp': false,
 }});
@@ -1076,7 +1076,7 @@ and `appium:dotnetBridge: true`.
 ```js
 capabilities: {
   platformName: 'Windows',
-  'appium:automationName': 'DesktopDriver',
+  'appium:automationName': 'Wincore',
   'appium:appTopLevelWindow': hwnd,   // decimal HWND string
   'appium:dotnetBridge': true,
   'appium:shouldCloseApp': false,
@@ -1092,7 +1092,7 @@ then inject the bridge at any point during the session.
 // 1. Create a plain UIA session pointed at the target window
 const driver = await remote({ ..., capabilities: {
   platformName: 'Windows',
-  'appium:automationName': 'DesktopDriver',
+  'appium:automationName': 'Wincore',
   'appium:appTopLevelWindow': hwnd,
   'appium:shouldCloseApp': false,
 }});

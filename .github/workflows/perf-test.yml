@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       nodeCount:
-        description: 'java-swing-large accessible node count'
+        description: 'wpf-large accessible node count'
         required: false
         default: '1500'
   # schedule:
@@ -33,25 +33,18 @@ jobs:
         with:
           node-version: '24.x'
 
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '8'
-
       - name: Install dependencies
         run: npm install --no-package-lock
 
-      # Full build: TS + native server + Java agent jar + .NET bridge artifacts.
-      # The java and dotnet-bridge perf suites need the agent jar / bridge DLLs.
-      - name: Build driver (all native artifacts)
-        run: npm run build:all
+      # Native server + TS. The uia suite is pure native UIA — no agent jar or
+      # .NET bridge artifacts needed (those suites moved to their own plugin
+      # repos, each with its own perf CI).
+      - name: Build driver
+        run: npm run build:native && npm run build
 
       - name: Build perf fixtures
         working-directory: appium-wincore-test-apps
-        run: |
-          npm run build:java-swing-large-test-app
-          npm run build:wpf-large-test-app
-          npm run build:winforms-large-test-app
+        run: npm run build:wpf-large-test-app
 
       - name: Install Appium
         run: npm install -g appium@3.5.0
@@ -64,8 +57,6 @@ jobs:
         shell: pwsh
         env:
           TEST_APPS_DIR: ${{ github.workspace }}\appium-wincore-test-apps
-          # Unset unless the dispatch supplies one — each suite has its own sensible
-          # default (java 12000, uia 1500, dotnet-bridge 6000) matched to its baseline.
           PERF_NODE_COUNT: ${{ github.event.inputs.nodeCount }}
         run: |
           $appiumPath = (Get-Command appium.cmd).Source

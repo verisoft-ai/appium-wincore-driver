@@ -1,5 +1,5 @@
 import type { ExecuteMethodMap } from '@appium/types';
-import type { AppiumDesktopDriver } from './driver';
+import type { AppiumWincoreDriver } from './driver';
 
 /**
  * Standard Appium execute-method descriptors for the `windows:` commands, so they're
@@ -7,7 +7,7 @@ import type { AppiumDesktopDriver } from './driver';
  * Kept alongside (not replacing) the legacy `windows:` + `EXTENSION_COMMANDS` dispatch
  * in `lib/commands/extension.ts` for backwards compatibility.
  */
-export const executeMethodMap: ExecuteMethodMap<AppiumDesktopDriver> = {
+export const executeMethodMap: ExecuteMethodMap<AppiumWincoreDriver> = {
     'windows: cacheRequest': {
         command: 'emCacheRequest',
         params: { optional: ['treeScope', 'treeFilter', 'automationElementMode'] },
@@ -78,20 +78,9 @@ export const executeMethodMap: ExecuteMethodMap<AppiumDesktopDriver> = {
     'windows: getWindowElement': { command: 'getWindowElement' },
     'windows: getMonitors': { command: 'windowsGetMonitors' },
     'windows: getDpiScale': { command: 'emGetDpiScale' },
-    'windows: attachJavaSwing': { command: 'emAttachJavaSwing', params: { optional: ['jdkPath'] } },
-    'windows: attachDotnetBridge': { command: 'emAttachDotnetBridge', params: {} },
-    'windows: findElementViaDotnetBridge': {
-        command: 'emFindElementViaDotnetBridge',
-        params: { required: ['using', 'value'], optional: ['contextElementId'] },
-    },
-    'windows: findElementsViaDotnetBridge': {
-        command: 'emFindElementsViaDotnetBridge',
-        params: { required: ['using', 'value'], optional: ['contextElementId'] },
-    },
-    'windows: getPageSourceViaDotnetBridge': {
-        command: 'emGetPageSourceViaDotnetBridge',
-        params: { optional: ['contextElementId'] },
-    },
+    // Bridge commands are contributed by their own Appium plugins, not this driver:
+    //   windows: attachJavaSwing            → appium-wincore-java-bridge
+    //   windows: attachDotnetBridge, *ViaDotnetBridge → appium-wincore-dotnet-bridge
     'windows: switchToWindowByTitle': {
         command: 'emSwitchToWindowByTitle',
         params: { optional: ['title', 'exact'] },

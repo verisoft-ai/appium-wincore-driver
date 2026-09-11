@@ -1,9 +1,9 @@
 /**
  * E2E coverage for XPath axes and functions, exercised end to end: driver ->
- * `evaluateXPath` RPC -> `DesktopDriverServer.exe` materialises the live UIA
+ * `evaluateXPath` RPC -> `WincoreServer.exe` materialises the live UIA
  * subtree into an `XmlDocument` and runs the whole expression through
  * `System.Xml.XPath` (`lib/xpath/` is just the client shim). The synthetic-tree
- * unit coverage is `csharp/DesktopDriverServer.Tests/XPathEvaluatorTests.cs`;
+ * unit coverage is `csharp/WincoreServer.Tests/XPathEvaluatorTests.cs`;
  * this pins the same behaviour against a real UIA tree.
  *
  * Target: Windows Calculator. Its NumberPad group (`AutomationId="NumberPad"`)

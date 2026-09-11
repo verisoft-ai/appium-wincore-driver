@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Element, Rect } from '@appium/types';
-import { AppiumDesktopDriver } from '../driver';
+import { AppiumWincoreDriver } from '../driver';
 import { propertyCondition, andCondition, orCondition } from '../server/conditions';
 import { errors, W3C_ELEMENT_KEY } from 'appium/driver';
 import { mouseDown, mouseMoveAbsolute, mouseUp, getCursorPos } from '../winapi/user32';
@@ -14,7 +14,7 @@ import type { RectResult } from '../server/protocol';
  * @param elementId - The id of the element to read from.
  * @returns The property value as a string.
  */
-export async function getProperty(this: AppiumDesktopDriver, propertyName: string, elementId: string): Promise<string> {
+export async function getProperty(this: AppiumWincoreDriver, propertyName: string, elementId: string): Promise<string> {
     return await this.sendCommand('getProperty', { elementId, property: propertyName }) as string;
 }
 
@@ -25,7 +25,7 @@ export async function getProperty(this: AppiumDesktopDriver, propertyName: strin
  * @param elementId - The id of the element to read from.
  * @returns The attribute value.
  */
-export async function getAttribute(this: AppiumDesktopDriver, propertyName: string, elementId: string) {
+export async function getAttribute(this: AppiumWincoreDriver, propertyName: string, elementId: string) {
     if (this.isIEContext()) {
         return this.ieSession!.getAttribute(elementId, propertyName);
     }
@@ -37,7 +37,7 @@ export async function getAttribute(this: AppiumDesktopDriver, propertyName: stri
  * Finds the currently focused UI element.
  * @returns A WebDriver element reference for the focused element.
  */
-export async function active(this: AppiumDesktopDriver): Promise<Element> {
+export async function active(this: AppiumWincoreDriver): Promise<Element> {
     const elementId = await this.sendCommand('findElementFocused', {}) as string;
     return { [W3C_ELEMENT_KEY]: elementId };
 }
@@ -47,7 +47,7 @@ export async function active(this: AppiumDesktopDriver): Promise<Element> {
  * @param elementId - The id of the element to inspect.
  * @returns The element's tag/control-type name.
  */
-export async function getName(this: AppiumDesktopDriver, elementId: string): Promise<string> {
+export async function getName(this: AppiumWincoreDriver, elementId: string): Promise<string> {
     if (this.isIEContext()) {
         return (await this.ieSession!.getAttribute(elementId, 'tagName')) ?? '';
     }
@@ -59,7 +59,7 @@ export async function getName(this: AppiumDesktopDriver, elementId: string): Pro
  * @param elementId - The id of the element to read text from.
  * @returns The element's text, with embedded-object placeholder characters stripped.
  */
-export async function getText(this: AppiumDesktopDriver, elementId: string): Promise<string> {
+export async function getText(this: AppiumWincoreDriver, elementId: string): Promise<string> {
     if (this.isIEContext()) {
         return this.ieSession!.getText(elementId);
     }
@@ -73,7 +73,7 @@ export async function getText(this: AppiumDesktopDriver, elementId: string): Pro
  * @param elementId - The id of the element to clear.
  * @returns Resolves once the element has been cleared.
  */
-export async function clear(this: AppiumDesktopDriver, elementId: string): Promise<void> {
+export async function clear(this: AppiumWincoreDriver, elementId: string): Promise<void> {
     if (this.isIEContext()) {
         await this.ieSession!.clear(elementId);
         return;
@@ -90,7 +90,7 @@ export async function clear(this: AppiumDesktopDriver, elementId: string): Promi
  * @param elementId - The id of the element to send the value to.
  * @returns Resolves once all characters and key actions have been sent.
  */
-export async function setValue(this: AppiumDesktopDriver, value: string | string[], elementId: string): Promise<void> {
+export async function setValue(this: AppiumWincoreDriver, value: string | string[], elementId: string): Promise<void> {
     if (this.isIEContext()) {
         const text = Array.isArray(value) ? value.join('') : value;
         await this.ieSession!.setValue(elementId, text);
@@ -229,7 +229,7 @@ export async function setValue(this: AppiumDesktopDriver, value: string | string
  * @param elementId - The id of the element to measure.
  * @returns The element's rect (x, y, width, height) relative to the root window.
  */
-export async function getElementRect(this: AppiumDesktopDriver, elementId: string): Promise<Rect> {
+export async function getElementRect(this: AppiumWincoreDriver, elementId: string): Promise<Rect> {
     if (this.isIEContext()) {
         throw new errors.NotYetImplementedError();
     }
@@ -247,7 +247,7 @@ export async function getElementRect(this: AppiumDesktopDriver, elementId: strin
  * @param elementId - The id of the element to check.
  * @returns True if the element is on screen (not marked `IsOffscreen`).
  */
-export async function elementDisplayed(this: AppiumDesktopDriver, elementId: string): Promise<boolean> {
+export async function elementDisplayed(this: AppiumWincoreDriver, elementId: string): Promise<boolean> {
     if (this.isIEContext()) {
         return this.ieSession!.isDisplayed(elementId);
     }
@@ -265,7 +265,7 @@ export async function elementDisplayed(this: AppiumDesktopDriver, elementId: str
  * @param elementId - The id of the element to check.
  * @returns True if the element is selected or toggled on.
  */
-export async function elementSelected(this: AppiumDesktopDriver, elementId: string): Promise<boolean> {
+export async function elementSelected(this: AppiumWincoreDriver, elementId: string): Promise<boolean> {
     if (this.isIEContext()) {
         return this.ieSession!.isSelected(elementId);
     }
@@ -283,7 +283,7 @@ export async function elementSelected(this: AppiumDesktopDriver, elementId: stri
  * @param elementId - The id of the element to check.
  * @returns True if the element's `IsEnabled` property is true.
  */
-export async function elementEnabled(this: AppiumDesktopDriver, elementId: string): Promise<boolean> {
+export async function elementEnabled(this: AppiumWincoreDriver, elementId: string): Promise<boolean> {
     if (this.isIEContext()) {
         return this.ieSession!.isEnabled(elementId);
     }
@@ -299,7 +299,7 @@ export async function elementEnabled(this: AppiumDesktopDriver, elementId: strin
  * @param elementId - The id of the element to click.
  * @returns Resolves once the click has been dispatched and the post-click settle delay elapses.
  */
-export async function click(this: AppiumDesktopDriver, elementId: string): Promise<void> {
+export async function click(this: AppiumWincoreDriver, elementId: string): Promise<void> {
     if (this.isIEContext()) {
         await this.ieSession!.click(elementId);
         return;
@@ -422,7 +422,7 @@ export async function click(this: AppiumDesktopDriver, elementId: string): Promi
  * @param elementId - The id of the element to capture.
  * @returns A base64-encoded PNG image of the element.
  */
-export async function getElementScreenshot(this: AppiumDesktopDriver, elementId: string): Promise<string> {
+export async function getElementScreenshot(this: AppiumWincoreDriver, elementId: string): Promise<string> {
     if (this.isIEContext()) {
         throw new errors.NotYetImplementedError();
     }
@@ -440,7 +440,7 @@ export async function getElementScreenshot(this: AppiumDesktopDriver, elementId:
  * @returns Resolves once the frame switch has completed.
  */
 export async function setFrame(
-    this: AppiumDesktopDriver,
+    this: AppiumWincoreDriver,
     id: null | number | Record<string, string>,
 ): Promise<void> {
     if (!this.isIEContext()) {
@@ -466,7 +466,7 @@ export async function setFrame(
  * in IE context.
  * @returns Resolves once the switch has completed.
  */
-export async function switchToParentFrame(this: AppiumDesktopDriver): Promise<void> {
+export async function switchToParentFrame(this: AppiumWincoreDriver): Promise<void> {
     if (!this.isIEContext()) {
         throw new errors.NotImplementedError('switchToParentFrame is only supported in IE context');
     }

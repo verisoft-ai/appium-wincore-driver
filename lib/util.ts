@@ -1,7 +1,7 @@
 import { errors } from 'appium/driver';
 import { fs, zip, node, tempDir, logger } from 'appium/support';
 import { pipeline } from 'node:stream/promises';
-import { AppiumDesktopDriver } from './driver';
+import { AppiumWincoreDriver } from './driver';
 import http from 'node:http';
 import https from 'node:https';
 import net from 'node:net';
@@ -28,7 +28,7 @@ export const MODULE_NAME = 'appium-wincore-driver';
  * Resolves the path to the bundled ffmpeg binary from the ffmpeg-static package.
  * Used by startRecordingScreen; no system PATH fallback.
  */
-export async function getBundledFfmpegPath(driver: AppiumDesktopDriver): Promise<string | null> {
+export async function getBundledFfmpegPath(driver: AppiumWincoreDriver): Promise<string | null> {
     const ffmpegExecutablePath = driver.caps.ffmpegExecutablePath;
 
     if (ffmpegExecutablePath) {
@@ -151,7 +151,7 @@ export async function getBundledFfmpegPath(driver: AppiumDesktopDriver): Promise
 }
 
 export async function cdpRequest<T = unknown>(
-    this: AppiumDesktopDriver | undefined,
+    this: AppiumWincoreDriver | undefined,
     { host, port, endpoint, timeout },
 ): Promise<T> {
     if (this?.log) {

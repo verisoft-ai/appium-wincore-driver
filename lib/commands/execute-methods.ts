@@ -9,10 +9,9 @@
  */
 import { W3C_ELEMENT_KEY } from 'appium/driver';
 import { Element } from '@appium/types';
-import { AppiumDesktopDriver } from '../driver';
+import { AppiumWincoreDriver } from '../driver';
 import { ClickType } from '../enums';
 import { executeGetNativeChildren } from './native';
-import type { LocateStrategy } from './find-via';
 import {
     patternInvoke,
     patternExpand,
@@ -34,11 +33,6 @@ import {
     focusElement,
     windowsGetDeviceTime,
     windowsSwitchToWindowByTitle,
-    executeAttachJavaSwing,
-    executeAttachDotnetBridge,
-    findElementViaDotnetBridge,
-    findElementsViaDotnetBridge,
-    getPageSourceViaDotnetBridge,
     setClipboardFromBase64,
     deleteFile,
     deleteFolder,
@@ -64,7 +58,7 @@ function toElement(elementId: string): Element {
  * @param elementId - The id of the element to invoke.
  * @returns Resolves once the Invoke pattern has been triggered.
  */
-export async function emInvoke(this: AppiumDesktopDriver, elementId: string): Promise<void> {
+export async function emInvoke(this: AppiumWincoreDriver, elementId: string): Promise<void> {
     return await patternInvoke.call(this, toElement(elementId));
 }
 
@@ -73,7 +67,7 @@ export async function emInvoke(this: AppiumDesktopDriver, elementId: string): Pr
  * @param elementId - The id of the element to expand.
  * @returns Resolves once the Expand/Collapse pattern's Expand has been triggered.
  */
-export async function emExpand(this: AppiumDesktopDriver, elementId: string): Promise<void> {
+export async function emExpand(this: AppiumWincoreDriver, elementId: string): Promise<void> {
     return await patternExpand.call(this, toElement(elementId));
 }
 
@@ -82,7 +76,7 @@ export async function emExpand(this: AppiumDesktopDriver, elementId: string): Pr
  * @param elementId - The id of the element to collapse.
  * @returns Resolves once the Expand/Collapse pattern's Collapse has been triggered.
  */
-export async function emCollapse(this: AppiumDesktopDriver, elementId: string): Promise<void> {
+export async function emCollapse(this: AppiumWincoreDriver, elementId: string): Promise<void> {
     return await patternCollapse.call(this, toElement(elementId));
 }
 
@@ -91,7 +85,7 @@ export async function emCollapse(this: AppiumDesktopDriver, elementId: string): 
  * @param elementId - The id of the element to check.
  * @returns True if the element's Selection pattern allows multiple selection.
  */
-export async function emIsMultiple(this: AppiumDesktopDriver, elementId: string): Promise<boolean> {
+export async function emIsMultiple(this: AppiumWincoreDriver, elementId: string): Promise<boolean> {
     return await patternIsMultiple.call(this, toElement(elementId));
 }
 
@@ -100,7 +94,7 @@ export async function emIsMultiple(this: AppiumDesktopDriver, elementId: string)
  * @param elementId - The id of the element to scroll into view.
  * @returns Resolves once the ScrollItem pattern has been triggered.
  */
-export async function emScrollIntoView(this: AppiumDesktopDriver, elementId: string): Promise<void> {
+export async function emScrollIntoView(this: AppiumWincoreDriver, elementId: string): Promise<void> {
     return await patternScrollIntoView.call(this, toElement(elementId));
 }
 
@@ -109,7 +103,7 @@ export async function emScrollIntoView(this: AppiumDesktopDriver, elementId: str
  * @param elementId - The id of the container element (Selection pattern) to query.
  * @returns The currently selected element.
  */
-export async function emSelectedItem(this: AppiumDesktopDriver, elementId: string): Promise<Element> {
+export async function emSelectedItem(this: AppiumWincoreDriver, elementId: string): Promise<Element> {
     return await patternGetSelectedItem.call(this, toElement(elementId));
 }
 
@@ -118,7 +112,7 @@ export async function emSelectedItem(this: AppiumDesktopDriver, elementId: strin
  * @param elementId - The id of the container element (Selection pattern) to query.
  * @returns All currently selected elements.
  */
-export async function emAllSelectedItems(this: AppiumDesktopDriver, elementId: string): Promise<Element[]> {
+export async function emAllSelectedItems(this: AppiumWincoreDriver, elementId: string): Promise<Element[]> {
     return await patternGetAllSelectedItems.call(this, toElement(elementId));
 }
 
@@ -127,7 +121,7 @@ export async function emAllSelectedItems(this: AppiumDesktopDriver, elementId: s
  * @param elementId - The id of the element to add to the current selection.
  * @returns Resolves once the SelectionItem pattern's AddToSelection has been triggered.
  */
-export async function emAddToSelection(this: AppiumDesktopDriver, elementId: string): Promise<void> {
+export async function emAddToSelection(this: AppiumWincoreDriver, elementId: string): Promise<void> {
     return await patternAddToSelection.call(this, toElement(elementId));
 }
 
@@ -136,7 +130,7 @@ export async function emAddToSelection(this: AppiumDesktopDriver, elementId: str
  * @param elementId - The id of the element to remove from the current selection.
  * @returns Resolves once the SelectionItem pattern's RemoveFromSelection has been triggered.
  */
-export async function emRemoveFromSelection(this: AppiumDesktopDriver, elementId: string): Promise<void> {
+export async function emRemoveFromSelection(this: AppiumWincoreDriver, elementId: string): Promise<void> {
     return await patternRemoveFromSelection.call(this, toElement(elementId));
 }
 
@@ -145,7 +139,7 @@ export async function emRemoveFromSelection(this: AppiumDesktopDriver, elementId
  * @param elementId - The id of the element to select.
  * @returns Resolves once the SelectionItem pattern's Select has been triggered.
  */
-export async function emSelect(this: AppiumDesktopDriver, elementId: string): Promise<void> {
+export async function emSelect(this: AppiumWincoreDriver, elementId: string): Promise<void> {
     return await patternSelect.call(this, toElement(elementId));
 }
 
@@ -154,7 +148,7 @@ export async function emSelect(this: AppiumDesktopDriver, elementId: string): Pr
  * @param elementId - The id of the element to toggle.
  * @returns Resolves once the Toggle pattern has been triggered.
  */
-export async function emToggle(this: AppiumDesktopDriver, elementId: string): Promise<void> {
+export async function emToggle(this: AppiumWincoreDriver, elementId: string): Promise<void> {
     return await patternToggle.call(this, toElement(elementId));
 }
 
@@ -163,7 +157,7 @@ export async function emToggle(this: AppiumDesktopDriver, elementId: string): Pr
  * @param elementId - The id of the element to read the Value pattern's value from.
  * @returns The element's value.
  */
-export async function emGetValue(this: AppiumDesktopDriver, elementId: string): Promise<string> {
+export async function emGetValue(this: AppiumWincoreDriver, elementId: string): Promise<string> {
     return await patternGetValue.call(this, toElement(elementId));
 }
 
@@ -172,7 +166,7 @@ export async function emGetValue(this: AppiumDesktopDriver, elementId: string): 
  * @param elementId - The id of the element to maximize.
  * @returns Resolves once the Window pattern's Maximize has been triggered.
  */
-export async function emMaximize(this: AppiumDesktopDriver, elementId: string): Promise<void> {
+export async function emMaximize(this: AppiumWincoreDriver, elementId: string): Promise<void> {
     return await patternMaximize.call(this, toElement(elementId));
 }
 
@@ -181,7 +175,7 @@ export async function emMaximize(this: AppiumDesktopDriver, elementId: string): 
  * @param elementId - The id of the element to minimize.
  * @returns Resolves once the Window pattern's Minimize has been triggered.
  */
-export async function emMinimize(this: AppiumDesktopDriver, elementId: string): Promise<void> {
+export async function emMinimize(this: AppiumWincoreDriver, elementId: string): Promise<void> {
     return await patternMinimize.call(this, toElement(elementId));
 }
 
@@ -190,7 +184,7 @@ export async function emMinimize(this: AppiumDesktopDriver, elementId: string): 
  * @param elementId - The id of the element to restore.
  * @returns Resolves once the Window pattern's Restore has been triggered.
  */
-export async function emRestore(this: AppiumDesktopDriver, elementId: string): Promise<void> {
+export async function emRestore(this: AppiumWincoreDriver, elementId: string): Promise<void> {
     return await patternRestore.call(this, toElement(elementId));
 }
 
@@ -199,7 +193,7 @@ export async function emRestore(this: AppiumDesktopDriver, elementId: string): P
  * @param elementId - The id of the element to close.
  * @returns Resolves once the Window pattern's Close has been triggered.
  */
-export async function emClose(this: AppiumDesktopDriver, elementId: string): Promise<void> {
+export async function emClose(this: AppiumWincoreDriver, elementId: string): Promise<void> {
     return await patternClose.call(this, toElement(elementId));
 }
 
@@ -208,7 +202,7 @@ export async function emClose(this: AppiumDesktopDriver, elementId: string): Pro
  * @param elementId - The id of the element to focus.
  * @returns Resolves once focus has been set.
  */
-export async function emSetFocus(this: AppiumDesktopDriver, elementId: string): Promise<void> {
+export async function emSetFocus(this: AppiumWincoreDriver, elementId: string): Promise<void> {
     return await focusElement.call(this, toElement(elementId));
 }
 
@@ -217,7 +211,7 @@ export async function emSetFocus(this: AppiumDesktopDriver, elementId: string): 
  * @param elementId - The id of the element whose native MSAA children should be walked.
  * @returns The MSAA accessible tree rooted at the element.
  */
-export async function emGetNativeChildren(this: AppiumDesktopDriver, elementId: string) {
+export async function emGetNativeChildren(this: AppiumWincoreDriver, elementId: string) {
     return await executeGetNativeChildren.call(this, toElement(elementId));
 }
 
@@ -229,7 +223,7 @@ export async function emGetNativeChildren(this: AppiumDesktopDriver, elementId: 
  * @param value - The value to set via the Value pattern.
  * @returns Resolves once the value has been set.
  */
-export async function emSetValue(this: AppiumDesktopDriver, elementId: string, value: string): Promise<void> {
+export async function emSetValue(this: AppiumWincoreDriver, elementId: string, value: string): Promise<void> {
     return await patternSetValue.call(this, toElement(elementId), value);
 }
 
@@ -243,7 +237,7 @@ export async function emSetValue(this: AppiumDesktopDriver, elementId: string, v
  * @returns Resolves once the cache request has been pushed.
  */
 export async function emCacheRequest(
-    this: AppiumDesktopDriver,
+    this: AppiumWincoreDriver,
     treeScope?: string,
     treeFilter?: string,
     automationElementMode?: string,
@@ -256,7 +250,7 @@ export async function emCacheRequest(
  * @param format - A .NET custom date/time format string; defaults to ISO 8601.
  * @returns The formatted date/time string.
  */
-export async function emGetDeviceTime(this: AppiumDesktopDriver, format?: string): Promise<string> {
+export async function emGetDeviceTime(this: AppiumWincoreDriver, format?: string): Promise<string> {
     return await windowsGetDeviceTime.call(this, { format });
 }
 
@@ -267,73 +261,11 @@ export async function emGetDeviceTime(this: AppiumDesktopDriver, format?: string
  * @returns Resolves once the root element has been switched.
  */
 export async function emSwitchToWindowByTitle(
-    this: AppiumDesktopDriver,
+    this: AppiumWincoreDriver,
     title?: string,
     exact?: boolean,
 ): Promise<void> {
     return await windowsSwitchToWindowByTitle.call(this, { title, exact });
-}
-
-/**
- * `executeMethod` wrapper for {@link executeAttachJavaSwing}.
- * @param jdkPath - Optional path to the JDK to use for attaching the Java Access Bridge.
- * @returns Resolves once the Java Swing session has been attached.
- */
-export async function emAttachJavaSwing(this: AppiumDesktopDriver, jdkPath?: string): Promise<void> {
-    return await executeAttachJavaSwing.call(this, { jdkPath });
-}
-
-/**
- * `executeMethod` wrapper for {@link executeAttachDotnetBridge}.
- * @returns Resolves once the .NET bridge session has been attached.
- */
-export async function emAttachDotnetBridge(this: AppiumDesktopDriver): Promise<void> {
-    return await executeAttachDotnetBridge.call(this);
-}
-
-/**
- * `executeMethod` wrapper for {@link findElementViaDotnetBridge}.
- * @param using - Locator strategy (xpath, accessibility id, name, class name, tag name, id, -windows uiautomation).
- * @param value - The locator value for the chosen strategy.
- * @param contextElementId - Optional .NET bridge element id to search within.
- * @returns The matching element.
- * @throws {NoSuchElementError} If no element matches — same contract as standard `findElement`.
- */
-export async function emFindElementViaDotnetBridge(
-    this: AppiumDesktopDriver,
-    using: LocateStrategy,
-    value: string,
-    contextElementId?: string,
-): Promise<Element> {
-    return await findElementViaDotnetBridge.call(this, { using, value, contextElementId });
-}
-
-/**
- * `executeMethod` wrapper for {@link findElementsViaDotnetBridge}.
- * @param using - Locator strategy, same options as {@link emFindElementViaDotnetBridge}.
- * @param value - The locator value for the chosen strategy.
- * @param contextElementId - Optional .NET bridge element id to search within.
- * @returns All matching elements (empty array if none).
- */
-export async function emFindElementsViaDotnetBridge(
-    this: AppiumDesktopDriver,
-    using: LocateStrategy,
-    value: string,
-    contextElementId?: string,
-): Promise<Element[]> {
-    return await findElementsViaDotnetBridge.call(this, { using, value, contextElementId });
-}
-
-/**
- * `executeMethod` wrapper for {@link getPageSourceViaDotnetBridge}.
- * @param contextElementId - Optional .NET bridge element id to scope the dump to a subtree.
- * @returns The bridge tree as XML.
- */
-export async function emGetPageSourceViaDotnetBridge(
-    this: AppiumDesktopDriver,
-    contextElementId?: string,
-): Promise<string> {
-    return await getPageSourceViaDotnetBridge.call(this, { contextElementId });
 }
 
 /**
@@ -343,7 +275,7 @@ export async function emGetPageSourceViaDotnetBridge(
  * @returns Confirmation/result string from setting the clipboard.
  */
 export async function emSetClipboard(
-    this: AppiumDesktopDriver,
+    this: AppiumWincoreDriver,
     b64Content: string,
     contentType?: string,
 ): Promise<string> {
@@ -355,7 +287,7 @@ export async function emSetClipboard(
  * @param path - Path of the file to delete on the machine running the session.
  * @returns Resolves once the file has been deleted.
  */
-export async function emDeleteFile(this: AppiumDesktopDriver, path: string): Promise<void> {
+export async function emDeleteFile(this: AppiumWincoreDriver, path: string): Promise<void> {
     return await deleteFile.call(this, { path });
 }
 
@@ -365,7 +297,7 @@ export async function emDeleteFile(this: AppiumDesktopDriver, path: string): Pro
  * @param recursive - Whether to delete non-empty folders recursively.
  * @returns Resolves once the folder has been deleted.
  */
-export async function emDeleteFolder(this: AppiumDesktopDriver, path: string, recursive?: boolean): Promise<void> {
+export async function emDeleteFolder(this: AppiumWincoreDriver, path: string, recursive?: boolean): Promise<void> {
     return await deleteFolder.call(this, { path, recursive });
 }
 
@@ -375,7 +307,7 @@ export async function emDeleteFolder(this: AppiumDesktopDriver, path: string, re
  * @param forceUnicode - Whether to force Unicode key input instead of virtual-key codes.
  * @returns Resolves once the key actions have been sent.
  */
-export async function emKeys(this: AppiumDesktopDriver, actions: any, forceUnicode?: boolean) {
+export async function emKeys(this: AppiumWincoreDriver, actions: any, forceUnicode?: boolean) {
     return await executeKeys.call(this, { actions, forceUnicode: forceUnicode ?? false });
 }
 
@@ -392,7 +324,7 @@ export async function emKeys(this: AppiumDesktopDriver, actions: any, forceUnico
  * @returns Resolves once the click(s) have been performed.
  */
 export async function emClick(
-    this: AppiumDesktopDriver,
+    this: AppiumWincoreDriver,
     elementId?: string,
     x?: number,
     y?: number,
@@ -418,7 +350,7 @@ export async function emClick(
  * @returns Resolves once the hover move has completed.
  */
 export async function emHover(
-    this: AppiumDesktopDriver,
+    this: AppiumWincoreDriver,
     startElementId?: string,
     startX?: number,
     startY?: number,
@@ -442,7 +374,7 @@ export async function emHover(
  * @returns Resolves once the scroll has been performed.
  */
 export async function emScroll(
-    this: AppiumDesktopDriver,
+    this: AppiumWincoreDriver,
     elementId?: string,
     x?: number,
     y?: number,
@@ -467,7 +399,7 @@ export async function emScroll(
  * @returns Resolves once the click-and-drag has completed.
  */
 export async function emClickAndDrag(
-    this: AppiumDesktopDriver,
+    this: AppiumWincoreDriver,
     startElementId?: string,
     startX?: number,
     startY?: number,
@@ -495,7 +427,7 @@ export async function emClickAndDrag(
  * @returns Resolves once recording has started.
  */
 export async function emStartRecordingScreen(
-    this: AppiumDesktopDriver,
+    this: AppiumWincoreDriver,
     outputPath?: string,
     timeLimit?: number,
     videoFps?: number,
@@ -523,7 +455,7 @@ export async function emStartRecordingScreen(
  * @returns Base64-encoded recording content, or the upload response if `remotePath` was given.
  */
 export async function emStopRecordingScreen(
-    this: AppiumDesktopDriver,
+    this: AppiumWincoreDriver,
     remotePath?: string,
     user?: string,
     pass?: string,
@@ -539,6 +471,6 @@ export async function emStopRecordingScreen(
  * `executeMethod` wrapper for {@link executeGetDpiScale}.
  * @returns The current display's DPI scaling factor.
  */
-export async function emGetDpiScale(this: AppiumDesktopDriver): Promise<number> {
+export async function emGetDpiScale(this: AppiumWincoreDriver): Promise<number> {
     return executeGetDpiScale.call(this);
 }

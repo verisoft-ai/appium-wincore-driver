@@ -10,7 +10,7 @@ import {
 } from '@appium/types';
 
 import { W3C_ELEMENT_KEY, errors } from 'appium/driver';
-import { AppiumDesktopDriver } from '../driver';
+import { AppiumWincoreDriver } from '../driver';
 import { keyDown, keyUp, mouseMoveRelative, mouseMoveAbsolute, mouseDown, mouseUp, mouseScroll } from '../winapi/user32';
 import { sleep } from '../util';
 import type { RectResult } from '../server/protocol';
@@ -22,7 +22,7 @@ import { Key } from '../enums';
  * @param actionSequences - The list of action sequences to execute, one per input source.
  * @returns Resolves once all ticks in every sequence have been executed.
  */
-export async function performActions(this: AppiumDesktopDriver, actionSequences: ActionSequence[]): Promise<void> {
+export async function performActions(this: AppiumWincoreDriver, actionSequences: ActionSequence[]): Promise<void> {
     for (const actionSequence of actionSequences) {
         if (actionSequence.type === 'pointer' &&
             (actionSequence.parameters?.pointerType === 'touch' || actionSequence.parameters?.pointerType === 'pen')) {
@@ -69,7 +69,7 @@ export async function performActions(this: AppiumDesktopDriver, actionSequences:
  * @param actionSequence - The sequence of key actions to execute sequentially.
  * @returns Resolves once every action in the sequence has been executed.
  */
-export async function handleKeyActionSequence(this: AppiumDesktopDriver, actionSequence: KeyActionSequence): Promise<void> {
+export async function handleKeyActionSequence(this: AppiumWincoreDriver, actionSequence: KeyActionSequence): Promise<void> {
     for (const action of actionSequence.actions) {
         await this.handleKeyAction(action);
     }
@@ -80,7 +80,7 @@ export async function handleKeyActionSequence(this: AppiumDesktopDriver, actionS
  * @param action - The pointer action to execute.
  * @returns Resolves once the action has been executed.
  */
-export async function handleSingleMousePointerAction(this: AppiumDesktopDriver, action: PointerActionSequence['actions'][number]): Promise<void> {
+export async function handleSingleMousePointerAction(this: AppiumWincoreDriver, action: PointerActionSequence['actions'][number]): Promise<void> {
     switch (action.type) {
         case 'pointerMove':
             await this.handleMouseMoveAction(action);
@@ -108,7 +108,7 @@ export async function handleSingleMousePointerAction(this: AppiumDesktopDriver, 
  * @param action - The wheel action to execute.
  * @returns Resolves once the action has been executed.
  */
-export async function handleSingleWheelAction(this: AppiumDesktopDriver, action: WheelActionSequence['actions'][number]): Promise<void> {
+export async function handleSingleWheelAction(this: AppiumWincoreDriver, action: WheelActionSequence['actions'][number]): Promise<void> {
     switch (action.type) {
         case 'scroll':
             await this.handleMouseMoveAction({ ...action, duration: 0 });
@@ -134,7 +134,7 @@ export async function handleSingleWheelAction(this: AppiumDesktopDriver, action:
  * @param action - The pointer move or scroll action describing the target offset and origin.
  * @returns Resolves once the move has completed.
  */
-export async function handleMouseMoveAction(this: AppiumDesktopDriver, action: PointerMoveAction | ScrollAction): Promise<void> {
+export async function handleMouseMoveAction(this: AppiumWincoreDriver, action: PointerMoveAction | ScrollAction): Promise<void> {
     const easingFunction = this.caps.smoothPointerMove;
     switch (action.origin) {
         case 'pointer':
@@ -170,7 +170,7 @@ export async function handleMouseMoveAction(this: AppiumDesktopDriver, action: P
  * @param action - The key action to execute.
  * @returns Resolves once the action has been executed.
  */
-export async function handleKeyAction(this: AppiumDesktopDriver, action: KeyAction): Promise<void> {
+export async function handleKeyAction(this: AppiumWincoreDriver, action: KeyAction): Promise<void> {
     if (action.type === 'pause') {
         if (action.duration) {
             await sleep(action.duration);
@@ -264,7 +264,7 @@ export async function handleKeyAction(this: AppiumDesktopDriver, action: KeyActi
  * driver's tracked input state.
  * @returns Resolves once all held keys and buttons have been released.
  */
-export async function releaseActions(this: AppiumDesktopDriver): Promise<void> {
+export async function releaseActions(this: AppiumWincoreDriver): Promise<void> {
     if (this.keyboardState.shift) {
         keyUp(Key.SHIFT);
         keyUp(Key.R_SHIFT);

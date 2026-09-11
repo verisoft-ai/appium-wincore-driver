@@ -2,7 +2,7 @@ import { Chromedriver, ChromedriverOpts } from 'appium-chromedriver';
 import { fs, node, system, tempDir, zip } from '@appium/support';
 import path from 'node:path';
 import { cdpRequest, downloadFile, sleep, MODULE_NAME } from '../util';
-import { AppiumDesktopDriver } from '../driver';
+import { AppiumWincoreDriver } from '../driver';
 import { errors } from 'appium/driver';
 
 const NATIVE_APP = 'NATIVE_APP';
@@ -13,7 +13,7 @@ const WEBVIEW_BASE = `${WEBVIEW}_`;
  * Gets the name of the currently active context (`NATIVE_APP` or a `WEBVIEW_<id>` handle).
  * @returns The current context name.
  */
-export async function getCurrentContext(this: AppiumDesktopDriver): Promise<string> {
+export async function getCurrentContext(this: AppiumWincoreDriver): Promise<string> {
     return this.currentContext ??= NATIVE_APP;
 }
 
@@ -25,7 +25,7 @@ export async function getCurrentContext(this: AppiumDesktopDriver): Promise<stri
  * @param name - The context name to switch to, or `null`/omitted for `NATIVE_APP`.
  * @returns Resolves once the context switch (and, for webviews, chromedriver startup) completes.
  */
-export async function setContext(this: AppiumDesktopDriver, name?: string | null): Promise<void> {
+export async function setContext(this: AppiumWincoreDriver, name?: string | null): Promise<void> {
     if (!name || name === NATIVE_APP) {
         this.chromedriver?.stop();
         this.chromedriver = null;
@@ -100,7 +100,7 @@ export async function setContext(this: AppiumDesktopDriver, name?: string | null
  * webview page discovered via CDP.
  * @returns The list of available context names.
  */
-export async function getContexts(this: AppiumDesktopDriver): Promise<string[]> {
+export async function getContexts(this: AppiumWincoreDriver): Promise<string[]> {
     const webViewDetails = await this.getWebViewDetails();
     return [
         NATIVE_APP,
@@ -177,7 +177,7 @@ type CDPListResponse = CDPListResponseEntry[];
  * while a webview is still initializing).
  * @returns The CDP version info and list of open pages.
  */
-export async function getWebViewDetails(this: AppiumDesktopDriver, waitForWebviewMs?: number): Promise<WebViewDetails> {
+export async function getWebViewDetails(this: AppiumWincoreDriver, waitForWebviewMs?: number): Promise<WebViewDetails> {
     if (!this.caps.webviewEnabled) {
         throw new errors.InvalidArgumentError('WebView support is not enabled. Please set the "enableWebView" capability to true and try again.');
     }
@@ -206,7 +206,7 @@ export async function getWebViewDetails(this: AppiumDesktopDriver, waitForWebvie
     return webViewDetails;
 }
 
-async function getDriverExecutable(this: AppiumDesktopDriver, browserType: 'Edge' | 'Chrome', browserVersion: `${number}.${number}.${number}.${number}`): Promise<string> {
+async function getDriverExecutable(this: AppiumWincoreDriver, browserType: 'Edge' | 'Chrome', browserVersion: `${number}.${number}.${number}.${number}`): Promise<string> {
     let driverType: string;
 
     if (browserType === 'Chrome') {

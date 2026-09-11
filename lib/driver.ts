@@ -1,14 +1,13 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { BaseDriver, errors } from 'appium/driver';
-import { join } from 'node:path';
 import { system } from 'appium/support';
 import type { ScreenRecorder } from './commands/screen-recorder';
 import commands from './commands';
 import {
-    DesktopDriverConstraints,
+    WincoreDriverConstraints,
     UI_AUTOMATION_DRIVER_CONSTRAINTS
 } from './constraints';
-import { DesktopDriverServerClient } from './server/client';
+import { WincoreServerClient } from './server/client';
 import { attachLogFileMirror, LogFileMirror } from './log-file';
 import { DRIVER_VERSION } from './version';
 import { executeMethodMap } from './execute-method-map';
@@ -31,8 +30,8 @@ import type {
     W3CDriverCaps
 } from '@appium/types';
 
-type W3CDesktopDriverCaps = W3CDriverCaps<DesktopDriverConstraints>;
-type DefaultWindowsCreateSessionResult = DefaultCreateSessionResult<DesktopDriverConstraints>;
+type W3CWincoreDriverCaps = W3CDriverCaps<WincoreDriverConstraints>;
+type DefaultWindowsCreateSessionResult = DefaultCreateSessionResult<WincoreDriverConstraints>;
 
 type KeyboardState = {
     pressed: Set<string>,
@@ -74,10 +73,10 @@ const CHROMEDRIVER_NO_PROXY: RouteMatcher[] = [
     // context. Letting them proxy means logs work while a WEBVIEW_* context is active.
 ];
 
-export class AppiumDesktopDriver extends BaseDriver<DesktopDriverConstraints, StringRecord> {
+export class AppiumWincoreDriver extends BaseDriver<WincoreDriverConstraints, StringRecord> {
     static executeMethodMap = executeMethodMap;
 
-    serverClient?: DesktopDriverServerClient;
+    serverClient?: WincoreServerClient;
     mouseButtonsDown: Set<number> = new Set();
     keyboardState: KeyboardState = {
         pressed: new Set(),
@@ -114,7 +113,7 @@ export class AppiumDesktopDriver extends BaseDriver<DesktopDriverConstraints, St
 
     async sendCommand(method: string, params: Record<string, unknown> = {}): Promise<unknown> {
         if (!this.serverClient) {
-            throw new errors.UnknownError('DesktopDriverServer is not running.');
+            throw new errors.UnknownError('WincoreServer is not running.');
         }
         return await this.serverClient.sendCommand(method, params);
     }
@@ -180,9 +179,9 @@ export class AppiumDesktopDriver extends BaseDriver<DesktopDriverConstraints, St
     }
 
     override async createSession(
-        jwpCaps: W3CDesktopDriverCaps,
-        reqCaps?: W3CDesktopDriverCaps,
-        w3cCaps?: W3CDesktopDriverCaps,
+        jwpCaps: W3CWincoreDriverCaps,
+        reqCaps?: W3CWincoreDriverCaps,
+        w3cCaps?: W3CWincoreDriverCaps,
         driverData?: DriverData[]
     ): Promise<DefaultWindowsCreateSessionResult> {
         if (!system.isWindows()) {
@@ -210,7 +209,7 @@ export class AppiumDesktopDriver extends BaseDriver<DesktopDriverConstraints, St
         }
 
         try {
-            this.log.debug('Creating AppiumDesktop driver session...');
+            this.log.debug('Creating AppiumWincore driver session...');
             const [sessionId, caps] = await super.createSession(jwpCaps, reqCaps, w3cCaps, driverData);
             if (caps.logFile !== undefined && caps.logFile !== false) {
                 try {
@@ -236,56 +235,19 @@ export class AppiumDesktopDriver extends BaseDriver<DesktopDriverConstraints, St
             }
 
             if (this.caps.systemPort) {
-                this.log.info(`systemPort capability (${this.caps.systemPort}) is ignored. AppiumDesktopDriver uses stdin/stdout IPC.`);
+                this.log.info(`systemPort capability (${this.caps.systemPort}) is ignored. AppiumWincoreDriver uses stdin/stdout IPC.`);
             }
 
             // UIA server always starts. IEDriverServer starts lazily on first IE window switch.
             {
-                const javaSwingLaunchPath = this.caps.javaSwing
-                    && !!this.caps.app
-                    && this.caps.app !== 'root'
-                    && this.caps.app !== 'none'
-                    && !this.caps.appTopLevelWindow;
-
-                if (javaSwingLaunchPath) {
-                    const agentJar = join(__dirname, '..', '..', 'native', 'win-x64', 'appium-desktop-agent.jar');
-                    const agentFlag = `-javaagent:"${agentJar}"`;
-                    this.caps.appArguments = this.caps.appArguments
-                        ? `${agentFlag} ${this.caps.appArguments}`
-                        : agentFlag;
-                    this.log.info(`Java Swing mode enabled — injecting agent: ${agentJar}`);
-                }
-
                 await this.startServerSession();
 
-                if (this.caps.javaSwing) {
-                    if (javaSwingLaunchPath) {
-                        this.log.info('Connecting to Java agent...');
-                        await this.sendCommand('enableJavaSwing', {});
-                        this.log.info('Java agent connected successfully.');
-                    } else {
-                        if (!this.caps.appTopLevelWindow) {
-                            throw new errors.InvalidArgumentError(
-                                'javaSwing:true with no app requires the appTopLevelWindow capability to identify the Java window.'
-                            );
-                        }
-                        this.log.info('Java Swing mode: injecting agent into running JVM via Java Attach API...');
-                        await this.sendCommand('injectJavaAgent', { hwnd: Number(this.caps.appTopLevelWindow), jdkPath: this.caps.jdkPath });
-                        this.log.info('Java agent injected and connected successfully.');
-                    }
-                }
-
-                if (this.caps.dotnetBridge) {
-                    if (!this.caps.appTopLevelWindow) {
-                        throw new errors.InvalidArgumentError(
-                            'dotnetBridge:true requires the appTopLevelWindow capability to identify the target window ' +
-                            '(no launch-time injection is supported for .NET — attach only).'
-                        );
-                    }
-                    this.log.info('.NET Bridge mode: injecting bridge into running CLR via Win32 injection...');
-                    await this.sendCommand('injectDotnetBridge', { hwnd: Number(this.caps.appTopLevelWindow) });
-                    this.log.info('.NET bridge injected and connected successfully.');
-                }
+                // Java Swing (JAB) and .NET (WinForms/WPF) bridge attach are not
+                // driver concerns — the appium-wincore-java-bridge and
+                // appium-wincore-dotnet-bridge plugins own them via
+                // `windows: attachJavaSwing` / `windows: attachDotnetBridge`,
+                // called after switching to the target window (same shape as the
+                // uia-bridge plugin).
 
                 if (this.caps.prerun) {
                     this.log.info('Executing prerun PowerShell script...');
@@ -302,7 +264,7 @@ export class AppiumDesktopDriver extends BaseDriver<DesktopDriverConstraints, St
     }
 
     override async deleteSession(sessionId?: string | null | undefined): Promise<void> {
-        this.log.debug('Deleting AppiumDesktop driver session...');
+        this.log.debug('Deleting AppiumWincore driver session...');
 
         if (this.ieSession) {
             try {

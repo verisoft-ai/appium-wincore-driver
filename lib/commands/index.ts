@@ -30,7 +30,7 @@ type Commands = {
 };
 
 declare module '../driver' {
-    interface AppiumDesktopDriver extends Commands {}
+    interface AppiumWincoreDriver extends Commands {}
 }
 
 export default commands;
