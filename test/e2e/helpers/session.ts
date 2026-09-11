@@ -242,34 +242,6 @@ export async function createExplorerSession(extraCaps?: Record<string, unknown>)
     return createSimpleAppSession(EXPLORER_APP_PATH, extraCaps);
 }
 
-// The Java fixtures run on whatever JDK JAVA_HOME points at (actions/setup-java sets it
-// in CI). Fall back to `javaw` on PATH rather than a hard-coded install dir — a stale
-// absolute path fails with a confusing ENOENT if that JVM was ever removed.
-export const JAVAW_EXE_PATH = process.env.JAVA_HOME
-    ? `${process.env.JAVA_HOME}\\bin\\javaw.exe`
-    : 'javaw';
-
-/**
- * Session attached to an already-running Java window (external launch), then the
- * Java Access Bridge agent injected via the appium-wincore-java-bridge plugin's
- * `windows: attachJavaSwing` command — the only supported attach path.
- */
-export async function createJavaSwingAttachSession(hwnd: string, extraCaps?: Record<string, unknown>): Promise<Browser> {
-    const driver = await remote({
-        ...APPIUM_SERVER,
-        capabilities: {
-            platformName: 'Windows',
-            'appium:automationName': 'Wincore',
-            'appium:appTopLevelWindow': hwnd,
-            'appium:shouldCloseApp': false,
-            ...extraCaps,
-        } as Caps,
-    });
-    await driver.executeScript('windows: attachJavaSwing', []);
-    await driver.setTimeout({ implicit: 3000 });
-    return driver;
-}
-
 export const WINFORMS_LARGE_APP_PATH = resolve(
     TEST_APPS_DIR, 'winforms-large', 'bin', 'x64', 'Debug', 'net472', 'WinformsLarge.exe',
 );
