@@ -270,51 +270,6 @@ export async function createJavaSwingAttachSession(hwnd: string, extraCaps?: Rec
     return driver;
 }
 
-export const JAVA_SWING_LARGE_CLASSPATH = resolve(TEST_APPS_DIR, 'java-swing-large');
-
-/**
- * Launches the java-swing-large performance fixture (LargeTreeForm) with a target
- * accessible-node count. Not a correctness fixture — used only by the perf benchmark
- * in test/perf/. Pass `perfMetrics: true` in extraCaps to enable the RPC counters.
- */
-export async function createJavaSwingLargeSession(
-    nodeCount = 1500,
-    extraCaps?: Record<string, unknown>,
-): Promise<{ driver: Browser; proc: ChildProcess }> {
-    const proc = spawn(
-        JAVAW_EXE_PATH,
-        ['-DnodeCount=' + nodeCount, '-cp', JAVA_SWING_LARGE_CLASSPATH, 'LargeTreeForm'],
-        { detached: true, stdio: 'ignore' },
-    );
-    if (!proc.pid) {
-        throw new Error(`Failed to spawn Java process: ${JAVAW_EXE_PATH}`);
-    }
-    const pid = proc.pid;
-    const deadline = Date.now() + 20_000;
-    let hwnd = '0';
-    while (Date.now() < deadline) {
-        try {
-            hwnd = execSync(
-                `powershell -Command "(Get-Process -Id ${pid} -ErrorAction Stop).MainWindowHandle"`,
-                { stdio: ['ignore', 'pipe', 'ignore'] },
-            ).toString().trim();
-        } catch {
-            hwnd = '0';
-        }
-        if (hwnd !== '0') {
-            break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 500));
-    }
-    if (hwnd === '0') {
-        proc.kill();
-        throw new Error(`java-swing-large window did not appear within 20s (pid=${pid})`);
-    }
-
-    const driver = await createJavaSwingAttachSession(hwnd, extraCaps);
-    return { driver, proc };
-}
-
 export const WINFORMS_LARGE_APP_PATH = resolve(
     TEST_APPS_DIR, 'winforms-large', 'bin', 'x64', 'Debug', 'net472', 'WinformsLarge.exe',
 );
