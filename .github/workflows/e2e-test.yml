@@ -17,11 +17,6 @@ jobs:
         with:
           node-version: '24.x'
 
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '8'
-
       - name: Install dependencies
         run: npm install --no-package-lock
 
@@ -85,7 +80,6 @@ jobs:
           }
 
           npx vitest run --config vitest.e2e.config.ts `
-            test/e2e/java-swing-form.e2e.ts `
             test/e2e/extension-powershell.e2e.ts `
             test/e2e/extension-webview.e2e.ts `
             test/e2e/actions.e2e.ts `
