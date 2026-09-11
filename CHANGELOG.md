@@ -1,3 +1,38 @@
+## [3.0.0](https://github.com/verisoft-ai/appium-wincore-driver/compare/v2.8.3...v3.0.0) (2026-09-11)
+
+### ⚠ BREAKING CHANGES
+
+* move .NET-bridge e2e + perf suites to appium-wincore-dotnet-bridge
+* the automationName capability is now "Wincore" (was
+"DesktopDriver") and the Appium driver name is "wincore" (was
+"desktopdriver"). Every client must update `appium:automationName` to
+"Wincore"; re-run `appium driver install` and update `--use-drivers`.
+The javaSwing / dotnetBridge capabilities were already removed in favour
+of the appium-wincore-java-bridge / appium-wincore-dotnet-bridge plugins.
+This is the 3.0.0 release line.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+### Miscellaneous Chores
+
+* drop stale native/build artifacts and their gitignore rules ([3a83938](https://github.com/verisoft-ai/appium-wincore-driver/commit/3a8393862af5b38e499dcf7ba6009cf4a7844c3f))
+* **server:** keep WincoreServer on the 1.x line (1.5.0-dev.0) ([4c93fb0](https://github.com/verisoft-ai/appium-wincore-driver/commit/4c93fb0423d5dc03493bd8ce69ed462aacebce68))
+
+### Code Refactoring
+
+* **driver:** drop the dotnetBridge capability ([0e68e7a](https://github.com/verisoft-ai/appium-wincore-driver/commit/0e68e7a801ff9f98fe909a88ceeb7f9be3530a38))
+* **driver:** move .NET bridge client commands to the plugin ([fad2fe5](https://github.com/verisoft-ai/appium-wincore-driver/commit/fad2fe5a0d7d4da665b4d06b2d24a473738573dd))
+* rename DesktopDriver -> Wincore across the driver and server ([9697260](https://github.com/verisoft-ai/appium-wincore-driver/commit/96972604a0d30d72dff5580d026e8ae4ff53b52d))
+* **server:** add ProviderRegistry + ISessionContext on SessionState ([d609d43](https://github.com/verisoft-ai/appium-wincore-driver/commit/d609d438c5770b18886e5b2221112cd9d47997f8))
+* **server:** extract the .NET bridge to appium-wincore-dotnet-bridge ([4559c42](https://github.com/verisoft-ai/appium-wincore-driver/commit/4559c4266fb0f1d20f68b84ab6179d9d53055378))
+* **server:** extract the Java bridge to appium-wincore-java-bridge ([4b9e4c0](https://github.com/verisoft-ai/appium-wincore-driver/commit/4b9e4c0f6959b8087718ebf3e49b30285ee1ff23))
+* **server:** extract WincoreServerSdk plugin-contract project ([16ddfe3](https://github.com/verisoft-ai/appium-wincore-driver/commit/16ddfe396b59643ac7c96bc4f679ee2c616caf4c))
+* **server:** route Java/.NET bridges through the plugin loader ([19a3d66](https://github.com/verisoft-ai/appium-wincore-driver/commit/19a3d66ded04f29590c47b1690bd4edd5cf332ce))
+
+### Tests
+
+* move .NET-bridge e2e + perf suites to appium-wincore-dotnet-bridge ([ec91ae7](https://github.com/verisoft-ai/appium-wincore-driver/commit/ec91ae7e2a77483d81bfcac94b1568436a12f1f1))
+
 ## [2.8.3](https://github.com/verisoft-ai/appium-wincore-driver/compare/v2.8.2...v2.8.3) (2026-09-08)
 
 ### Bug Fixes
