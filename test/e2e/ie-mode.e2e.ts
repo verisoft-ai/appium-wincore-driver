@@ -1,5 +1,5 @@
 /**
- * E2E tests for Edge UIA automation (no WebView/CDP, no IEDriverServer proxy).
+ * E2E tests for Edge UIA automation (no WebView/CDP, no protocol proxy).
  * Target: the-internet.herokuapp.com
  *
  * Navigation between test groups uses Ctrl+L to focus the Edge address bar,

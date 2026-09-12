@@ -15,7 +15,6 @@
   "main": "build/lib/driver.js",
   "files": [
     "build/lib/**/*",
-    "iedriver/**/*",
     "iebridge/IEBridge.exe",
     "native/win-x64/WincoreServer.exe",
     "scripts/postinstall.js",
