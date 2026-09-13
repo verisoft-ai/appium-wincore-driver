@@ -12,7 +12,7 @@ Key advantages over WinAppDriver:
 - Java Swing / AWT automation via injected JVM agent (no JAB required)
 - .NET/WinForms automation via injected CLR bridge — reads custom-drawn (ownerdraw) and DevExpress control values invisible to plain UIA
 - WebView2, Chrome, and Edge embedded content via CDP
-- Internet Explorer 11 automation via built-in IE DOM Bridge (no IEDriverServer required)
+- Internet Explorer 11 automation via built-in IE DOM Bridge
 - Built-in screen recording and clipboard API
 
 ## Installation
@@ -63,7 +63,6 @@ All capabilities use the `appium:` prefix in W3C format
 | `appium:ms:experimental-webdriver` | boolean | Experimental WebDriver features |
 | `appium:logFile` | string | Path to write session logs |
 | `appium:perfMetrics` | boolean | Enable per-session performance counters, read via `windows: getPerfMetrics` / reset via `windows: resetPerfMetrics`. Default: `false`. See `docs/performance.md`. |
-| `appium:ieDriverServerPath` | string | **Deprecated.** No longer used; IE is automated via the built-in DOM Bridge. |
 
 ## Examples
 
@@ -246,8 +245,8 @@ await driver.deleteSession();
 The driver includes a built-in IE DOM Bridge — a 32-bit C# process
 (`IEBridge.exe`) that attaches to a running IE 11 window via the
 `WM_HTML_GETOBJECT` message, retrieves `IHTMLDocument2` through COM, and
-routes all element commands over stdio JSON. No IEDriverServer and no
-WebDriver protocol proxy are involved.
+routes all element commands over stdio JSON. No WebDriver protocol
+proxy is involved.
 
 IE mode activates automatically whenever a session window has the
 `IEFrame` window class. This happens when:

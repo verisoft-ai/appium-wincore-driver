@@ -73,9 +73,6 @@ export const UI_AUTOMATION_DRIVER_CONSTRAINTS = {
     ffmpegExecutablePath: {
         isString: true,
     },
-    ieDriverServerPath: {
-        isString: true,
-    },
     perfMetrics: {
         isBoolean: true,
     },
