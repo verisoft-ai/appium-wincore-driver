@@ -1,3 +1,15 @@
+## [3.0.1](https://github.com/verisoft-ai/appium-wincore-driver/compare/v3.0.0...v3.0.1) (2026-09-13)
+
+### Bug Fixes
+
+* **ci:** pass required user input to NuGet/login ([93ccf48](https://github.com/verisoft-ai/appium-wincore-driver/commit/93ccf4819ebe3650f80f0635963ac8af89e11500))
+* **ci:** remove duplicate name key breaking release.yml ([c555aa3](https://github.com/verisoft-ai/appium-wincore-driver/commit/c555aa3fc09a8ce27aa0572b247c1efa4721ded1))
+* **ci:** resolve nupkg glob explicitly before dotnet nuget push ([c4420a2](https://github.com/verisoft-ai/appium-wincore-driver/commit/c4420a29430dcfcce748307acac6813e3cad5f86))
+
+### Miscellaneous Chores
+
+* remove dead IEDriverServer.exe and deprecated capability ([17560d7](https://github.com/verisoft-ai/appium-wincore-driver/commit/17560d7206abe9aba0619687161410c82f873697))
+
 ## [3.0.0](https://github.com/verisoft-ai/appium-wincore-driver/compare/v2.8.3...v3.0.0) (2026-09-11)
 
 ### ⚠ BREAKING CHANGES
