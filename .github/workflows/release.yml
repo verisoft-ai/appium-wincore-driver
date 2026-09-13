@@ -54,3 +54,59 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       name: Release
+
+  publish-sdk:
+    # WincoreServerSdk versions manually (bump <Version> in the csproj when the
+    # ITreeProvider/IServerPlugin/ISessionContext contract changes) rather than via
+    # semantic-release — the contract should change rarely, so this job just no-ops
+    # on every other push to main instead of running a second automated-versioning
+    # pipeline for a package that barely moves.
+    runs-on: windows-latest
+    environment: Release
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+    - uses: actions/checkout@v5
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.x'
+    - name: Check if this SDK version is already published
+      id: sdkver
+      shell: bash
+      run: |
+        VERSION=$(grep -oPm1 "(?<=<Version>)[^<]+" csharp/WincoreServerSdk/WincoreServerSdk.csproj)
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+          "https://api.nuget.org/v3-flatcontainer/wincoreserversdk/$VERSION/wincoreserversdk.$VERSION.nupkg")
+        if [ "$STATUS" = "200" ]; then
+          echo "already_published=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "already_published=false" >> "$GITHUB_OUTPUT"
+        fi
+      name: Check NuGet flat-container for existing version
+    - name: Pack WincoreServerSdk
+      if: steps.sdkver.outputs.already_published == 'false'
+      run: dotnet pack csharp/WincoreServerSdk/WincoreServerSdk.csproj -c Release -o ./nupkg
+    # NuGet trusted publishing: exchanges this job's GitHub OIDC token for a
+    # short-lived NuGet API key (unlike npm, NuGet has no built-in OIDC support in
+    # the CLI itself — the login action is required and its output key must be
+    # passed to `dotnet nuget push` explicitly). No secret stored in the repo or org.
+    - name: NuGet login (trusted publishing)
+      if: steps.sdkver.outputs.already_published == 'false'
+      id: nuget-login
+      uses: NuGet/login@v1
+    - name: Push WincoreServerSdk to NuGet
+      if: steps.sdkver.outputs.already_published == 'false'
+      run: >
+        dotnet nuget push ./nupkg/*.nupkg
+        --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}"
+        --source https://api.nuget.org/v3/index.json
+        --skip-duplicate
+    - name: Tag the published SDK version
+      if: steps.sdkver.outputs.already_published == 'false'
+      run: |
+        git tag "sdk-v${{ steps.sdkver.outputs.version }}"
+        git push origin "sdk-v${{ steps.sdkver.outputs.version }}"
