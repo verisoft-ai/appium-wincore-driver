@@ -97,6 +97,8 @@ jobs:
       if: steps.sdkver.outputs.already_published == 'false'
       id: nuget-login
       uses: NuGet/login@v1
+      with:
+        user: Yuri-Schwab
     - name: Push WincoreServerSdk to NuGet
       if: steps.sdkver.outputs.already_published == 'false'
       run: >
