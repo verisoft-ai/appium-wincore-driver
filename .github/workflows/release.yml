@@ -86,7 +86,6 @@ jobs:
         else
           echo "already_published=false" >> "$GITHUB_OUTPUT"
         fi
-      name: Check NuGet flat-container for existing version
     - name: Pack WincoreServerSdk
       if: steps.sdkver.outputs.already_published == 'false'
       run: dotnet pack csharp/WincoreServerSdk/WincoreServerSdk.csproj -c Release -o ./nupkg
