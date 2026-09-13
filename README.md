@@ -2,18 +2,19 @@
 
 Appium WinCore Driver is a Windows UI automation driver for
 [Appium 3](https://appium.io). It automates UWP, WinForms, WPF, Win32,
-Java Swing, and Internet Explorer applications.
+and Internet Explorer applications via real UI Automation — Java Swing/AWT
+and WinForms/WPF/DevExpress content invisible to UIA are reached through
+[installable plugins](#plugins).
 
 Key advantages over WinAppDriver:
 
 - Faster XPath evaluation against the live UIA tree
 - RawView element support (elements hidden from ContentView/ControlView)
 - Reliable text input independent of the active keyboard layout
-- Java Swing / AWT automation via injected JVM agent (no JAB required)
-- .NET/WinForms automation via injected CLR bridge — reads custom-drawn (ownerdraw) and DevExpress control values invisible to plain UIA
 - WebView2, Chrome, and Edge embedded content via CDP
 - Internet Explorer 11 automation via built-in IE DOM Bridge
 - Built-in screen recording and clipboard API
+- Java Swing/AWT and .NET (WinForms/WPF/DevExpress) automation via installable plugins — see [Plugins](#plugins) below
 
 ## Installation
 
@@ -23,9 +24,16 @@ appium driver install --source=npm appium-wincore-driver
 
 Requires Appium 3 and Windows 10 or later.
 
-For AI-agent use via MCP, see [wincore-mcp](https://github.com/verisoft-ai/wincore-mcp) — a separate package that drives this Appium server's `wincore` sessions over the WebDriver protocol.
+## Plugins
 
-For LLM vision-based element finding (`windows: findByVision`), see [appium-window2-vision-plugin](https://github.com/verisoft-ai/appium-window2-vision-plugin) — an installable Appium plugin, kept separate so its dependencies (OpenCV, canvas, provider SDKs) aren't required by default.
+The driver core ships with no bridge or agent code — everything beyond plain UIA is an
+installable Appium plugin that registers itself with `WincoreServer.exe` at load time. See
+each plugin's own README for install steps, commands, and capabilities:
+
+- [appium-wincore-java-bridge](https://github.com/y-schwab/appium-wincore-java-bridge) — Java Swing/AWT automation via the Java Attach API (`windows: attachJavaSwing`)
+- [appium-wincore-dotnet-bridge](https://github.com/y-schwab/appium-wincore-dotnet-bridge) — WinForms/WPF/DevExpress automation via CLR injection (`windows: attachDotnetBridge`)
+- [appium-wincore-vision-plugin](https://github.com/verisoft-ai/appium-wincore-vision-plugin) — LLM vision-based element finding (`windows: findByVision`), kept separate so its dependencies (OpenCV, canvas, provider SDKs) aren't required by default
+- [wincore-mcp](https://github.com/verisoft-ai/wincore-mcp) — MCP server for AI-agent use, driving `wincore` sessions purely over the WebDriver protocol (not an Appium plugin, a separate package)
 
 ## Capabilities
 
@@ -49,9 +57,6 @@ All capabilities use the `appium:` prefix in W3C format
 | `appium:smoothPointerMove` | string | CSS easing for mouse (e.g. `ease-in`) |
 | `appium:delayBeforeClick` | number | Milliseconds before each click |
 | `appium:delayAfterClick` | number | Milliseconds after each click |
-| `appium:javaSwing` | boolean | Enable JVM agent for Java Swing/AWT apps |
-| `appium:jdkPath` | string | Path to JDK root (e.g. `C:\Program Files\Java\jdk1.8.0_xxx`). Overrides `JAVA_HOME` for agent injection. Required only for Path B/C. |
-| `appium:dotnetBridge` | boolean | Inject the .NET bridge into the CLR owning `appium:appTopLevelWindow` at session time. Attach-only — requires `appium:appTopLevelWindow`. |
 | `appium:webviewEnabled` | boolean | Enable WebView2 / Chrome / Edge CDP |
 | `appium:webviewDevtoolsPort` | number | CDP port (auto-selected when omitted) |
 | `appium:chromedriverExecutablePath` | string | Local Chromedriver binary |
@@ -65,44 +70,6 @@ All capabilities use the `appium:` prefix in W3C format
 | `appium:perfMetrics` | boolean | Enable per-session performance counters, read via `windows: getPerfMetrics` / reset via `windows: resetPerfMetrics`. Default: `false`. See `docs/performance.md`. |
 
 ## Examples
-
-### Java Swing via JVM agent
-
-The driver automates Java Swing/AWT applications by injecting a lightweight
-JVM agent — no `jabswitch`, no JAB DLL required.
-
-Three injection paths are available:
-
-- **Path A** — driver launches the JVM (`appium:app` + `appium:javaSwing: true`). No `JAVA_HOME` needed.
-- **Path B** — attach to an already-running JVM at session time (`appium:appTopLevelWindow` + `appium:javaSwing: true`). Requires `JAVA_HOME` or `appium:jdkPath` pointing to a JDK.
-- **Path C** — inject agent mid-session via `windows: attachJavaSwing`. Start any session, switch to the Java window, then call the command. Requires `JAVA_HOME` or `appium:jdkPath` (or pass `jdkPath` as a script argument).
-
-See [API.md — Java Swing Automation](./API.md#java-swing-automation) for full examples, JAVA_HOME setup, and supported XPath attributes.
-
-### .NET Bridge via CLR injection
-
-The driver automates WinForms (and DevExpress WinForms) apps whose
-custom-drawn controls don't expose values through UIA, by injecting a
-native bridge DLL into the target's CLR — no launch-time hook, attach only.
-The same bridge also supports plain WPF apps: reading and mutating (invoke,
-select, expand, setValue, requestFocus) arbitrary WPF elements, correctly
-marshaled onto the WPF Dispatcher thread.
-
-Two injection paths are available:
-
-- **Path A** — attach at session time (`appium:appTopLevelWindow` + `appium:dotnetBridge: true`). No `appium:app` launch path exists for .NET; the target process must already be running.
-- **Path B** — inject mid-session via `windows: attachDotnetBridge`. Start any session, switch to the target window, then call the command.
-
-Standard `findElement`/`findElements`/`getPageSource` always reflect real UIA
-only — attaching the bridge never changes what they see or how the tree is
-shaped. Bridge-only content (values a custom-drawn control never exposes to
-UIA at all) is reached explicitly via `windows: findElementViaDotnetBridge`,
-`windows: findElementsViaDotnetBridge`, and `windows: getPageSourceViaDotnetBridge`.
-Elements returned by these behave exactly like any other element reference —
-every other `windows:` command (`invoke`, `select`, `expand`, `setValue`,
-`click`, ...) already works on them without any special handling.
-
-See [API.md — .NET Bridge Automation](./API.md#net-bridge-automation) for full examples and supported scope.
 
 ### Desktop root: click an icon and switch windows
 
