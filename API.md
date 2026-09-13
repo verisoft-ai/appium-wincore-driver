@@ -715,8 +715,8 @@ const source = await driver.executeScript('windows: getPageSourceViaDotnetBridge
 includes a built-in IE DOM Bridge — a 32-bit C# process
 (`IEBridge.exe`) that attaches to a running IE 11 window via the
 `WM_HTML_GETOBJECT` message, retrieves `IHTMLDocument2` through COM,
-and routes element commands over stdio JSON. No IEDriverServer, no
-WebDriver protocol proxy, and no special capability is needed.
+and routes element commands over stdio JSON. No WebDriver protocol
+proxy and no special capability is needed.
 
 ### How it works
 
@@ -734,10 +734,6 @@ WebDriver protocol proxy, and no special capability is needed.
 ### Capabilities
 
 No capability is required to automate IE.
-
-| Capability | Type | Description |
-| --- | --- | --- |
-| `appium:ieDriverServerPath` | string | **Deprecated.** No longer used — IE is automated via the built-in DOM Bridge, not IEDriverServer. |
 
 ### IE configuration (required)
 

@@ -205,7 +205,7 @@ export async function createIEProxySession(url: string, extraCaps?: Record<strin
             ...extraCaps,
         } as Caps,
     });
-    // Proxy is active; navigate to the target URL via IEDriverServer
+    // Proxy is active; navigate to the target URL via the IE bridge
     await driver.url(url);
     await driver.pause(3000);
     await driver.setTimeout({ implicit: 5000 });

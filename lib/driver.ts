@@ -238,7 +238,7 @@ export class AppiumWincoreDriver extends BaseDriver<WincoreDriverConstraints, St
                 this.log.info(`systemPort capability (${this.caps.systemPort}) is ignored. AppiumWincoreDriver uses stdin/stdout IPC.`);
             }
 
-            // UIA server always starts. IEDriverServer starts lazily on first IE window switch.
+            // UIA server always starts. The IE bridge attaches lazily on first IE window switch.
             {
                 await this.startServerSession();
 
