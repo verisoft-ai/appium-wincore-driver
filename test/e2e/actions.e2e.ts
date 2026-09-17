@@ -3,6 +3,7 @@ import type { Browser } from 'webdriverio';
 import {
     createCalculatorSession,
     createNotepadSession,
+    createCharmapSession,
     getNotepadTextArea,
     quitSession,
     resetCalculator,
@@ -179,52 +180,54 @@ describe('W3C Actions API', () => {
             expect((await textArea.getText()).trim()).toBe('X');
         });
 
-        it('wheel scroll moves the viewport: top and bottom are reachable by scrolling', async () => {
-            const textArea = await getNotepadTextArea(notepad);
-            const text = Array.from({ length: 40 }, (_, i) =>
-                `Line_${String(i + 1).padStart(2, '0')}`
-            ).join('\n');
-            await textArea.setValue(text);
+        it('wheel scroll moves the viewport: off-screen items become reachable by scrolling', async () => {
+            // Character Map's font ComboBox popup has a small, fixed-height dropdown
+            // regardless of window size/DPI, and the system font list is always long
+            // enough to overflow it — no synthetic content or window resizing needed
+            // to force a scrollable viewport (unlike typing N lines into Notepad).
+            let charmap: Browser | undefined;
+            try {
+                charmap = await createCharmapSession();
+                const comboBox = await charmap.$('~105');
+                await charmap.executeScript('windows: expand', [comboBox]);
+                await charmap.pause(200);
 
-            const loc = await textArea.getLocation();
-            const size = await textArea.getSize();
-            const cx = Math.round(loc.x + size.width / 2);
-            const cy = Math.round(loc.y + size.height / 2);
+                const items = await charmap.$$('//ListItem').getElements();
+                expect(items.length).toBeGreaterThan(20);
+                const firstItem = items[0];
+                const lastItem = items[items.length - 1];
 
-            // Step 2: scroll to the top; duration gives the viewport time to settle
-            await notepad.actions([
-                notepad.action('wheel').scroll({ x: cx, y: cy, deltaX: 0, deltaY: -1000, duration: 1000 }),
-            ]);
+                expect(String(await firstItem.getAttribute('IsOffscreen')).toLowerCase()).toBe('false');
+                expect(String(await lastItem.getAttribute('IsOffscreen')).toLowerCase()).toBe('true');
 
-            // Step 3: click the first visible line and mark it
-            await notepad.action('pointer')
-                .move({ x: cx, y: loc.y + 10 })
-                .down().up()
-                .perform();
-            await notepad.keys([Key.HOME]); // go to start of line
-            await notepad.keys(['T', 'O', 'P']);
+                const loc = await firstItem.getLocation();
+                const size = await firstItem.getSize();
+                const x = Math.round(loc.x + size.width / 2);
+                const y = Math.round(loc.y + size.height / 2);
 
-            // Step 4: scroll to the bottom
-            await notepad.actions([
-                notepad.action('wheel').scroll({ x: cx, y: cy, deltaX: 0, deltaY: 1000, duration: 1000 }),
-            ]);
+                // Scroll the popup down via a real wheel action; the last item should
+                // become reachable.
+                await charmap.actions([
+                    charmap.action('wheel').scroll({ x, y, deltaX: 0, deltaY: 100_000, duration: 1000 }),
+                ]);
+                await charmap.waitUntil(
+                    async () => String(await lastItem.getAttribute('IsOffscreen')).toLowerCase() === 'false',
+                    { timeoutMsg: 'last font item still off-screen after wheel-scrolling down' }
+                );
 
-            // Step 5: click the last visible line and mark it
-            await notepad.action('pointer')
-                .move({ x: cx, y: loc.y + size.height - 10 })
-                .down().up()
-                .perform();
-            await notepad.keys([Key.HOME]);
-            await notepad.keys(['B', 'O', 'T']);
-
-            const result = await textArea.getText();
-            const topPos = result.indexOf('TOP');
-            const bottomPos = result.indexOf('BOT');
-
-            // TOP marker must be near the start of the document
-            expect(topPos).toBeLessThan(result.indexOf('Line_05'));
-            // BOTTOM marker must be near the end of the document
-            expect(bottomPos).toBeGreaterThan(result.indexOf('Line_35'));
+                // Scroll back up; the first item should become reachable again.
+                await charmap.actions([
+                    charmap.action('wheel').scroll({ x, y, deltaX: 0, deltaY: -100_000, duration: 1000 }),
+                ]);
+                await charmap.waitUntil(
+                    async () => String(await firstItem.getAttribute('IsOffscreen')).toLowerCase() === 'false',
+                    { timeoutMsg: 'first font item still off-screen after wheel-scrolling up' }
+                );
+            } finally {
+                if (charmap) {
+                    await quitSession(charmap);
+                }
+            }
         });
     });
 });

@@ -51,7 +51,9 @@ describe('App lifecycle commands', () => {
                 await driver.executeScript('windows: closeApp', []);
                 await driver.executeScript('windows: launchApp', []);
                 const display = await driver.$('~CalculatorResults');
-                expect(await display.isExisting()).toBe(true);
+                // launchApp resolves once the process starts, not once its UI tree is ready —
+                // isExisting() checks immediately and can race a slow cold start, so wait for it.
+                await display.waitForExist({ timeout: 10_000 });
             } finally {
                 await quitSession(driver);
             }
