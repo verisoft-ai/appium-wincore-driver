@@ -18,6 +18,15 @@ jobs:
         with:
           node-version: '24.x'
 
+      - name: Verify .NET SDK
+        shell: pwsh
+        run: |
+          if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
+            Write-Error ".NET SDK not found on this runner. Install once: winget install Microsoft.DotNet.SDK.10"
+            exit 1
+          }
+          dotnet --version
+
       - name: Install dependencies
         run: npm install --no-package-lock
 
@@ -25,23 +34,49 @@ jobs:
         run: npm run build
 
       - name: Install Appium
-        run: npm install -g appium@3.5.0
+        shell: pwsh
+        run: |
+          if (-not (Get-Command appium -ErrorAction SilentlyContinue)) {
+            npm install -g appium@3.5.0
+          } else {
+            Write-Host "Appium already installed: $(appium --version)"
+          }
 
       - name: Install driver into Appium
         shell: pwsh
-        run: appium driver install --source=local $PWD
+        run: |
+          $installed = appium driver list --installed --json | ConvertFrom-Json
+          if ($installed.PSObject.Properties.Name -contains "wincore") {
+            appium driver uninstall wincore
+          }
+          appium driver install --source=local $PWD
 
       - name: Install Windows Calculator
         shell: pwsh
-        run: winget install --id 9WZDNCRFHVN5 --source msstore --accept-source-agreements --accept-package-agreements --silent
+        run: |
+          if (Get-AppxPackage -Name "Microsoft.WindowsCalculator" -ErrorAction SilentlyContinue) {
+            Write-Host "Calculator already installed, skipping"
+          } else {
+            winget install --id 9WZDNCRFHVN5 --source msstore --accept-source-agreements --accept-package-agreements --silent
+          }
 
       - name: Install Windows Notepad
         shell: pwsh
-        run: winget install --id 9MSMLRH6LZF3 --source msstore --accept-source-agreements --accept-package-agreements --silent
+        run: |
+          if (Get-AppxPackage -Name "Microsoft.WindowsNotepad" -ErrorAction SilentlyContinue) {
+            Write-Host "Notepad already installed, skipping"
+          } else {
+            winget install --id 9MSMLRH6LZF3 --source msstore --accept-source-agreements --accept-package-agreements --silent
+          }
 
       - name: Install Google Chrome
         shell: pwsh
-        run: winget install --id Google.Chrome --accept-source-agreements --accept-package-agreements --silent
+        run: |
+          if (winget list --id Google.Chrome --accept-source-agreements 2>$null | Select-String "Google.Chrome") {
+            Write-Host "Chrome already installed, skipping"
+          } else {
+            winget install --id Google.Chrome --accept-source-agreements --accept-package-agreements --silent
+          }
 
       - name: Start Appium and run E2E tests
         shell: pwsh
