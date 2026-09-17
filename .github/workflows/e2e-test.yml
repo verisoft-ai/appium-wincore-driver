@@ -122,12 +122,16 @@ jobs:
             exit 1
           }
 
+          # TEMPORARY: scoped to the failing test only for live debugging on the
+          # runner. Revert to the full suite below once it's fixed.
           npx vitest run --config vitest.e2e.config.ts `
-            test/e2e/extension-powershell.e2e.ts `
-            test/e2e/extension-webview.e2e.ts `
-            test/e2e/actions.e2e.ts `
-            test/e2e/element-commands.e2e.ts `
-            test/e2e/extension-app-lifecycle.e2e.ts
+            test/e2e/actions.e2e.ts -t "wheel scroll"
+          # npx vitest run --config vitest.e2e.config.ts `
+          #   test/e2e/extension-powershell.e2e.ts `
+          #   test/e2e/extension-webview.e2e.ts `
+          #   test/e2e/actions.e2e.ts `
+          #   test/e2e/element-commands.e2e.ts `
+          #   test/e2e/extension-app-lifecycle.e2e.ts
 
       - name: Publish E2E test report
         if: always()
