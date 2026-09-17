@@ -190,14 +190,35 @@ describe('W3C Actions API', () => {
                 charmap = await createCharmapSession();
                 const comboBox = await charmap.$('~105');
                 await charmap.executeScript('windows: expand', [comboBox]);
-                await charmap.pause(200);
 
-                const items = await charmap.$$('//ListItem').getElements();
-                expect(items.length).toBeGreaterThan(20);
+                await charmap.waitUntil(
+                    async () => {
+                        const state = await comboBox.getAttribute('ExpandCollapseState');
+                        return state === 'Expanded' || state === 'PartiallyExpanded';
+                    },
+                    { timeout: 5000, timeoutMsg: 'font ComboBox did not report Expanded state' }
+                );
+
+                // ExpandCollapseState flips before the popup's list finishes laying
+                // itself out — a fixed pause here was a race that occasionally let the
+                // assertions below run against a list that hadn't rendered yet. Poll
+                // until it's actually populated and settled instead.
+                let items: WebdriverIO.Element[] = [];
+                await charmap.waitUntil(
+                    async () => {
+                        items = await charmap!.$$('//ListItem').getElements();
+                        if (items.length <= 20) {
+                            return false;
+                        }
+                        const firstOffscreen = await items[0].getAttribute('IsOffscreen');
+                        return String(firstOffscreen).toLowerCase() === 'false';
+                    },
+                    { timeout: 5000, timeoutMsg: 'font list did not finish populating after expand' }
+                );
+
                 const firstItem = items[0];
                 const lastItem = items[items.length - 1];
 
-                expect(String(await firstItem.getAttribute('IsOffscreen')).toLowerCase()).toBe('false');
                 expect(String(await lastItem.getAttribute('IsOffscreen')).toLowerCase()).toBe('true');
 
                 const loc = await firstItem.getLocation();
