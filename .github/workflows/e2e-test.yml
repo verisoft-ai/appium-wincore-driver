@@ -69,13 +69,16 @@ jobs:
             winget install --id 9MSMLRH6LZF3 --source msstore --accept-source-agreements --accept-package-agreements --silent
           }
 
-      - name: Install Google Chrome
+      - name: Verify Google Chrome
         shell: powershell
         run: |
-          if (winget list --id Google.Chrome --accept-source-agreements 2>$null | Select-String "Google.Chrome") {
-            Write-Host "Chrome already installed, skipping"
-          } else {
-            winget install --id Google.Chrome --accept-source-agreements --accept-package-agreements --silent
+          $chromePaths = @(
+            "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
+            "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe"
+          )
+          if (-not ($chromePaths | Where-Object { Test-Path $_ })) {
+            Write-Error "Google Chrome not found on this runner. Install it manually, then re-run."
+            exit 1
           }
 
       - name: Start Appium and run E2E tests
