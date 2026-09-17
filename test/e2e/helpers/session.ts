@@ -9,6 +9,7 @@ export const APPIUM_SERVER = {
     hostname: '127.0.0.1',
     port: 4723,
     path: '/',
+    logLevel: 'warn' as const,
 };
 
 /**
