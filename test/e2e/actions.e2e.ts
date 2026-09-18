@@ -202,16 +202,12 @@ describe('W3C Actions API', () => {
                 // ExpandCollapseState flips before the popup's list finishes laying
                 // itself out — a fixed pause here was a race that occasionally let the
                 // assertions below run against a list that hadn't rendered yet. Poll
-                // until it's actually populated and settled instead.
+                // until it's actually populated instead.
                 let items: WebdriverIO.Element[] = [];
                 await charmap.waitUntil(
                     async () => {
                         items = await charmap!.$$('//ListItem').getElements();
-                        if (items.length <= 20) {
-                            return false;
-                        }
-                        const firstOffscreen = await items[0].getAttribute('IsOffscreen');
-                        return String(firstOffscreen).toLowerCase() === 'false';
+                        return items.length > 20;
                     },
                     { timeout: 5000, timeoutMsg: 'font list did not finish populating after expand' }
                 );
@@ -219,10 +215,21 @@ describe('W3C Actions API', () => {
                 const firstItem = items[0];
                 const lastItem = items[items.length - 1];
 
-                expect(String(await lastItem.getAttribute('IsOffscreen')).toLowerCase()).toBe('true');
+                // The popup opens scrolled to the currently-selected font, not
+                // necessarily to the top of the list — so item[0] isn't guaranteed to
+                // start on-screen. Find whichever item actually is, to use as the wheel
+                // action's hover point.
+                let onscreenItem: WebdriverIO.Element | undefined;
+                for (const item of items) {
+                    if (String(await item.getAttribute('IsOffscreen')).toLowerCase() === 'false') {
+                        onscreenItem = item;
+                        break;
+                    }
+                }
+                expect(onscreenItem, 'expected at least one font item to be visible after expand').toBeDefined();
 
-                const loc = await firstItem.getLocation();
-                const size = await firstItem.getSize();
+                const loc = await onscreenItem!.getLocation();
+                const size = await onscreenItem!.getSize();
                 const x = Math.round(loc.x + size.width / 2);
                 const y = Math.round(loc.y + size.height / 2);
 
