@@ -85,12 +85,37 @@ jobs:
             exit 1
           }
 
+      - name: Set up WinForm Combo fixture app
+        shell: powershell
+        run: |
+          # test/e2e/helpers/session.ts resolves fixture apps from a TEST_APPS_DIR env
+          # var, defaulting to a sibling checkout of this repo — keep it there so no
+          # override is needed.
+          $testAppsDir = Join-Path (Split-Path -Parent $PWD) 'appium-wincore-test-apps'
+          if (Test-Path $testAppsDir) {
+            Write-Host "Fixture apps repo already present, pulling latest"
+            git -C $testAppsDir pull --ff-only
+          } else {
+            git clone https://github.com/verisoft-ai/appium-wincore-test-apps.git $testAppsDir
+          }
+
+          dotnet publish (Join-Path $testAppsDir 'winform-combo\WinformCombo.csproj') -c Release -o (Join-Path $testAppsDir 'winform-combo\bin')
+
       - name: Start Appium and run E2E tests
         shell: powershell
         run: |
+          # A leftover Appium process (e.g. from manual debugging on this machine)
+          # squatting on the port would make the readiness check below silently
+          # latch onto it instead of this job's own instance. Clear the port first.
+          $stalePids = Get-NetTCPConnection -LocalPort 4723 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique
+          foreach ($stalePid in $stalePids) {
+            Write-Host "Killing stale process on port 4723: PID $stalePid"
+            Stop-Process -Id $stalePid -Force -ErrorAction SilentlyContinue
+          }
+
           $appiumPath = (Get-Command appium.cmd).Source
           $proc = Start-Process -FilePath $appiumPath `
-            -ArgumentList "--log-level","info" `
+            -ArgumentList "--log-level","info","--allow-insecure","modify_fs" `
             -RedirectStandardOutput "appium.log" `
             -RedirectStandardError "appium-err.log" `
             -PassThru -WindowStyle Hidden
@@ -127,7 +152,14 @@ jobs:
             test/e2e/extension-webview.e2e.ts `
             test/e2e/actions.e2e.ts `
             test/e2e/element-commands.e2e.ts `
-            test/e2e/extension-app-lifecycle.e2e.ts
+            test/e2e/extension-app-lifecycle.e2e.ts `
+            test/e2e/device-file-transfer.e2e.ts `
+            test/e2e/device-system.e2e.ts `
+            test/e2e/extension-cache-request.e2e.ts `
+            test/e2e/extension-clipboard.e2e.ts `
+            test/e2e/find-element.e2e.ts `
+            test/e2e/extension-winform-combo.e2e.ts `
+            test/e2e/extension-patterns.e2e.ts
 
       - name: Publish E2E test report
         if: always()
