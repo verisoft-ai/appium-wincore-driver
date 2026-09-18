@@ -115,7 +115,7 @@ jobs:
 
           $appiumPath = (Get-Command appium.cmd).Source
           $proc = Start-Process -FilePath $appiumPath `
-            -ArgumentList "--log-level","info","--allow-insecure","modify_fs" `
+            -ArgumentList "--log-level","info","--allow-insecure","wincore:modify_fs" `
             -RedirectStandardOutput "appium.log" `
             -RedirectStandardError "appium-err.log" `
             -PassThru -WindowStyle Hidden
