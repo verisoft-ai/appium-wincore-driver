@@ -50,10 +50,22 @@ describe('App lifecycle commands', () => {
             try {
                 await driver.executeScript('windows: closeApp', []);
                 await driver.executeScript('windows: launchApp', []);
-                const display = await driver.$('~CalculatorResults');
-                // launchApp resolves once the process starts, not once its UI tree is ready —
-                // isExisting() checks immediately and can race a slow cold start, so wait for it.
-                await display.waitForExist({ timeout: 10_000 });
+                // The close/relaunch transition can transiently throw a UIA COM error
+                // (0x80040201, "event was unable to invoke any of the subscribers") if a
+                // findElement call lands mid-transition — a thrown error, not a "not
+                // found" result, so waitForExist alone doesn't cover it (it only retries
+                // the latter). Retry the lookup itself through the transition window.
+                await driver.waitUntil(
+                    async () => {
+                        try {
+                            const display = await driver.$('~CalculatorResults');
+                            return await display.isExisting();
+                        } catch {
+                            return false;
+                        }
+                    },
+                    { timeout: 10_000, timeoutMsg: 'Calculator display did not become reachable after closeApp/launchApp' }
+                );
             } finally {
                 await quitSession(driver);
             }
