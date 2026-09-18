@@ -115,9 +115,12 @@ describe('App lifecycle commands', () => {
                 const handles = await rootDriver.getWindowHandles();
                 expect(handles).toContain(handle);
             } finally {
-                // Clean up: kill the orphaned Calculator
-                const newSession = await (await import('./helpers/session.js')).createCalculatorSession();
-                await quitSession(newSession);
+                // Clean up the orphaned window directly by its handle. Launching a fresh
+                // Calculator session here (as this used to do) spawns an unrelated second
+                // window — Calculator supports multiple independent instances — and closes
+                // that one instead, leaving this test's orphan running forever.
+                await rootDriver.switchToWindow(handle);
+                await rootDriver.executeScript('windows: closeApp', []);
                 await quitSession(rootDriver);
             }
         });
