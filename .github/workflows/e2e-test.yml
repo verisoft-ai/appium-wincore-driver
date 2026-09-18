@@ -8,7 +8,12 @@ on:
 
 jobs:
   e2e:
-    runs-on: windows-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, Windows, X64]
+    permissions:
+      checks: write
+      pull-requests: write
+      contents: read
 
     steps:
       - uses: actions/checkout@v6
@@ -17,6 +22,15 @@ jobs:
         with:
           node-version: '24.x'
 
+      - name: Verify .NET SDK
+        shell: powershell
+        run: |
+          if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
+            Write-Error ".NET SDK not found on this runner. Install once: winget install Microsoft.DotNet.SDK.10"
+            exit 1
+          }
+          dotnet --version
+
       - name: Install dependencies
         run: npm install --no-package-lock
 
@@ -24,30 +38,84 @@ jobs:
         run: npm run build
 
       - name: Install Appium
-        run: npm install -g appium@3.5.0
+        shell: powershell
+        run: |
+          if (-not (Get-Command appium -ErrorAction SilentlyContinue)) {
+            npm install -g appium@3.5.0
+          } else {
+            Write-Host "Appium already installed: $(appium --version)"
+          }
 
       - name: Install driver into Appium
-        shell: pwsh
-        run: appium driver install --source=local $PWD
+        shell: powershell
+        run: |
+          $installed = appium driver list --installed --json | ConvertFrom-Json
+          if ($installed.PSObject.Properties.Name -contains "wincore") {
+            appium driver uninstall wincore
+          }
+          appium driver install --source=local $PWD
 
       - name: Install Windows Calculator
-        shell: pwsh
-        run: winget install --id 9WZDNCRFHVN5 --source msstore --accept-source-agreements --accept-package-agreements --silent
+        shell: powershell
+        run: |
+          if (Get-AppxPackage -Name "Microsoft.WindowsCalculator" -ErrorAction SilentlyContinue) {
+            Write-Host "Calculator already installed, skipping"
+          } else {
+            winget install --id 9WZDNCRFHVN5 --source msstore --accept-source-agreements --accept-package-agreements --silent
+          }
 
       - name: Install Windows Notepad
-        shell: pwsh
-        run: winget install --id 9MSMLRH6LZF3 --source msstore --accept-source-agreements --accept-package-agreements --silent
+        shell: powershell
+        run: |
+          if (Get-AppxPackage -Name "Microsoft.WindowsNotepad" -ErrorAction SilentlyContinue) {
+            Write-Host "Notepad already installed, skipping"
+          } else {
+            winget install --id 9MSMLRH6LZF3 --source msstore --accept-source-agreements --accept-package-agreements --silent
+          }
 
-      - name: Install Google Chrome
-        shell: pwsh
-        run: winget install --id Google.Chrome --accept-source-agreements --accept-package-agreements --silent
+      - name: Verify Google Chrome
+        shell: powershell
+        run: |
+          $chromePaths = @(
+            "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
+            "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe"
+          )
+          if (-not ($chromePaths | Where-Object { Test-Path $_ })) {
+            Write-Error "Google Chrome not found on this runner. Install it manually, then re-run."
+            exit 1
+          }
+
+      - name: Set up WinForm Combo fixture app
+        shell: powershell
+        run: |
+          # test/e2e/helpers/session.ts resolves fixture apps from a TEST_APPS_DIR env
+          # var, defaulting to a sibling checkout of this repo — keep it there so no
+          # override is needed.
+          $testAppsDir = Join-Path (Split-Path -Parent $PWD) 'appium-wincore-test-apps'
+          if (Test-Path $testAppsDir) {
+            Write-Host "Fixture apps repo already present, pulling latest"
+            git -C $testAppsDir pull --ff-only
+          } else {
+            git clone https://github.com/verisoft-ai/appium-wincore-test-apps.git $testAppsDir
+          }
+
+          dotnet publish (Join-Path $testAppsDir 'winform-combo\WinformCombo.csproj') -c Release -o (Join-Path $testAppsDir 'winform-combo\bin')
 
       - name: Start Appium and run E2E tests
-        shell: pwsh
+        shell: powershell
         run: |
+          # A leftover Appium process (e.g. from manual debugging on this machine)
+          # squatting on the port would make the readiness check below silently
+          # latch onto it instead of this job's own instance. Clear the port first.
+          $stalePids = Get-NetTCPConnection -LocalPort 4723 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique
+          foreach ($stalePid in $stalePids) {
+            Write-Host "Killing stale process on port 4723: PID $stalePid"
+            Stop-Process -Id $stalePid -Force -ErrorAction SilentlyContinue
+          }
+
           $appiumPath = (Get-Command appium.cmd).Source
           $proc = Start-Process -FilePath $appiumPath `
-            -ArgumentList "--log-level","info" `
+            -ArgumentList "--log-level","info","--allow-insecure","wincore:modify_fs" `
             -RedirectStandardOutput "appium.log" `
             -RedirectStandardError "appium-err.log" `
             -PassThru -WindowStyle Hidden
@@ -84,7 +152,23 @@ jobs:
             test/e2e/extension-webview.e2e.ts `
             test/e2e/actions.e2e.ts `
             test/e2e/element-commands.e2e.ts `
-            test/e2e/extension-app-lifecycle.e2e.ts
+            test/e2e/extension-app-lifecycle.e2e.ts `
+            test/e2e/device-file-transfer.e2e.ts `
+            test/e2e/device-system.e2e.ts `
+            test/e2e/extension-cache-request.e2e.ts `
+            test/e2e/extension-clipboard.e2e.ts `
+            test/e2e/find-element.e2e.ts `
+            test/e2e/extension-winform-combo.e2e.ts `
+            test/e2e/extension-patterns.e2e.ts
+
+      - name: Publish E2E test report
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: E2E Test Results
+          path: test-results/e2e-junit.xml
+          reporter: java-junit
+          fail-on-error: false
 
       - name: Upload Appium logs on failure
         if: failure()

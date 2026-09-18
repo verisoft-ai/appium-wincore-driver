@@ -9,6 +9,7 @@ export const APPIUM_SERVER = {
     hostname: '127.0.0.1',
     port: 4723,
     path: '/',
+    logLevel: 'warn' as const,
 };
 
 /**
@@ -27,17 +28,35 @@ export const EDGE_APP_PATH = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Applicat
 type Caps = WebdriverIO.Capabilities;
 
 export async function createCalculatorSession(extraCaps?: Record<string, unknown>): Promise<Browser> {
-    const driver = await remote({
-        ...APPIUM_SERVER,
-        capabilities: {
-            platformName: 'Windows',
-            'appium:automationName': 'Wincore',
-            'appium:app': CALCULATOR_APP_ID,
-            ...extraCaps,
-        } as Caps,
-    });
-    await driver.setTimeout({ implicit: 1500 });
-    return driver;
+    const maxAttempts = 3;
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const driver = await remote({
+            ...APPIUM_SERVER,
+            capabilities: {
+                platformName: 'Windows',
+                'appium:automationName': 'Wincore',
+                'appium:app': CALCULATOR_APP_ID,
+                ...extraCaps,
+            } as Caps,
+        });
+        await driver.setTimeout({ implicit: 1500 });
+
+        // explorer.exe's `shell:AppsFolder` UWP activation (used by the driver's
+        // launchApp) occasionally misfires and brings a different app (e.g. Settings)
+        // to the foreground instead of Calculator. Detect that here — the shared
+        // entry point every test goes through — and relaunch, rather than let it
+        // surface later as an unrelated "element not found" failure downstream.
+        const attached = await driver.$('~num1Button').waitForExist({ timeout: 5000 }).catch(() => false);
+        if (attached) {
+            return driver;
+        }
+
+        lastError = new Error(`Calculator session attempt ${attempt}/${maxAttempts} did not attach to Calculator — app activation likely misfired`);
+        await quitSession(driver);
+    }
+    throw lastError;
 }
 
 export async function createNotepadSession(extraCaps?: Record<string, unknown>): Promise<Browser> {
