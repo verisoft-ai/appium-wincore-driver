@@ -50,8 +50,22 @@ describe('App lifecycle commands', () => {
             try {
                 await driver.executeScript('windows: closeApp', []);
                 await driver.executeScript('windows: launchApp', []);
-                const display = await driver.$('~CalculatorResults');
-                expect(await display.isExisting()).toBe(true);
+                // The close/relaunch transition can transiently throw a UIA COM error
+                // (0x80040201, "event was unable to invoke any of the subscribers") if a
+                // findElement call lands mid-transition — a thrown error, not a "not
+                // found" result, so waitForExist alone doesn't cover it (it only retries
+                // the latter). Retry the lookup itself through the transition window.
+                await driver.waitUntil(
+                    async () => {
+                        try {
+                            const display = await driver.$('~CalculatorResults');
+                            return await display.isExisting();
+                        } catch {
+                            return false;
+                        }
+                    },
+                    { timeout: 10_000, timeoutMsg: 'Calculator display did not become reachable after closeApp/launchApp' }
+                );
             } finally {
                 await quitSession(driver);
             }
@@ -101,9 +115,12 @@ describe('App lifecycle commands', () => {
                 const handles = await rootDriver.getWindowHandles();
                 expect(handles).toContain(handle);
             } finally {
-                // Clean up: kill the orphaned Calculator
-                const newSession = await (await import('./helpers/session.js')).createCalculatorSession();
-                await quitSession(newSession);
+                // Clean up the orphaned window directly by its handle. Launching a fresh
+                // Calculator session here (as this used to do) spawns an unrelated second
+                // window — Calculator supports multiple independent instances — and closes
+                // that one instead, leaving this test's orphan running forever.
+                await rootDriver.switchToWindow(handle);
+                await rootDriver.executeScript('windows: closeApp', []);
                 await quitSession(rootDriver);
             }
         });
