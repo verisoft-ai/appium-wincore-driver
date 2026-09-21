@@ -159,7 +159,16 @@ jobs:
             test/e2e/extension-clipboard.e2e.ts `
             test/e2e/find-element.e2e.ts `
             test/e2e/extension-winform-combo.e2e.ts `
-            test/e2e/extension-patterns.e2e.ts
+            test/e2e/extension-patterns.e2e.ts `
+            test/e2e/extension-filesystem.e2e.ts `
+            test/e2e/extension-input.e2e.ts `
+            test/e2e/navigation-window.e2e.ts `
+            test/e2e/session.e2e.ts `
+            test/e2e/window.e2e.ts `
+            test/e2e/xpath-axes.e2e.ts `
+            test/e2e/xpath-boolean-attributes.e2e.ts `
+            test/e2e/no-runtimeid-element.e2e.ts `
+            test/e2e/extension-screen-recording.e2e.ts
 
       - name: Publish E2E test report
         if: always()
