@@ -34,9 +34,13 @@ This is an **Appium driver** for Windows desktop UI automation, exposed via the 
 `plugin.json` manifest + assembly implementing `IServerPlugin` (`csharp/WincoreServerSdk/`,
 the published plugin contract): it contributes JSON-RPC command handlers and one
 `ITreeProvider` — a source of elements outside the real UIA tree, addressed by an element-id
-prefix (`java:`, `dotnet:`). Command handlers in `Commands/` route to a provider via
-`state.Providers.TryResolve(elementId)` / `TryResolveWindow(hwnd)` — no bridge-specific
-branching. Loader + registry live in `csharp/WincoreServer/Plugins/`.
+prefix (`java:`, `dotnet:`). Element-scoped commands are routed centrally: each is registered
+in `CommandDispatcher.AddElementRoutes` with a UIA handler (receives the resolved element) and
+a provider handler (`ElementRoute`, `Server/ElementRoute.cs`); handlers never check ids
+themselves. A null provider handler marks a command UIA-only (window operations, session
+root). New `ITreeProvider` capabilities get a default "not supported" body so older plugins
+keep loading. Find / XPath / page source route by window too (`TryResolveWindow(hwnd)`) and
+stay bespoke in their handlers. Loader + registry live in `csharp/WincoreServer/Plugins/`.
 
 The core server ships **no** built-in providers. Both bridges are their own repo + Appium
 plugin, loaded via `WINCORE_SERVER_PLUGINS`:

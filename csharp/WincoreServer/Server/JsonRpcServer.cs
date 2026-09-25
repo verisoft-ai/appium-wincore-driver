@@ -156,6 +156,7 @@ public class JsonRpcServer
                 InvalidSelectorException => ErrorCodes.InvalidSelector,
                 KeyNotFoundException => ErrorCodes.ElementNotFound,
                 ArgumentException => ErrorCodes.InvalidArgument,
+                NotSupportedException => ErrorCodes.PatternNotSupported,
                 InvalidOperationException when ex.Message.Contains("Pattern") => ErrorCodes.PatternNotSupported,
                 InvalidOperationException => ErrorCodes.InternalError,
                 _ => ErrorCodes.InternalError,
