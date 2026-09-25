@@ -14,6 +14,10 @@ namespace Wincore.ServerSdk;
 ///
 /// Implementations own their connection + element cache and must be thread-safe for
 /// the host's single request-loop thread (calls are serialized).
+///
+/// Capabilities added after SDK 1.0 carry a default "not supported" body — see the
+/// optional capabilities section. Window operations (maximize / move / close …) are
+/// deliberately absent: the host always performs them through UI Automation.
 /// </summary>
 public interface ITreeProvider : IDisposable
 {
@@ -100,6 +104,42 @@ public interface ITreeProvider : IDisposable
     void Select(string elementId);
     void RequestFocus(string elementId);
     void Expand(string elementId);
+
+    // ── optional capabilities ───────────────────────────────────────────────────
+    //
+    // Default-implemented as unsupported, so a plugin built against an older SDK
+    // keeps loading and a provider overrides only what its runtime can do. The host
+    // surfaces the NotSupportedException to the client as PatternNotSupported.
+
+    /// <summary>
+    /// Collapses an expanded element. When unsupported, the driver's caller falls
+    /// back to a keyboard toggle (ALT+Down).
+    /// </summary>
+    void Collapse(string elementId) => throw Unsupported(nameof(Collapse));
+
+    /// <summary>Scrolls the element into view within its scrollable container.</summary>
+    void ScrollIntoView(string elementId) => throw Unsupported(nameof(ScrollIntoView));
+
+    /// <summary>Adds the element to its container's selection (multi-select).</summary>
+    void AddToSelection(string elementId) => throw Unsupported(nameof(AddToSelection));
+
+    /// <summary>Removes the element from its container's selection.</summary>
+    void RemoveFromSelection(string elementId) => throw Unsupported(nameof(RemoveFromSelection));
+
+    /// <summary>True when the element is a container that allows multiple selected items.</summary>
+    bool IsMultipleSelect(string elementId) => throw Unsupported(nameof(IsMultipleSelect));
+
+    /// <summary>
+    /// Ids of the currently selected items of a selection container. Ids must be
+    /// minted by this provider (the host hands them back to the client as-is).
+    /// </summary>
+    IReadOnlyList<string> GetSelectedElements(string elementId) => throw Unsupported(nameof(GetSelectedElements));
+
+    /// <summary>Sets the value of a range control (slider, spinner, progress bar).</summary>
+    void SetRangeValue(string elementId, double value) => throw Unsupported(nameof(SetRangeValue));
+
+    private NotSupportedException Unsupported(string operation) =>
+        new($"The '{Name}' tree provider does not support {operation}.");
 
     // ── page source ─────────────────────────────────────────────────────────────
 

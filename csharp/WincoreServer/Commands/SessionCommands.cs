@@ -65,13 +65,11 @@ public static class SessionCommands
         return id;
     }
 
-    public static object? SetRootElementFromElementId(SessionState state, JsonElement? parameters)
+    // UIA-only: the session root is always a real UIA element; providers are reached
+    // from it by window routing, not by re-rooting on one of their element ids.
+    public static object? SetRootElementFromElementId(SessionState state, IUIAutomationElement element, JsonElement parameters)
     {
-        var p = parameters ?? throw new ArgumentException("Parameters required.");
-        var elementId = p.GetProperty("elementId").GetString()
-            ?? throw new ArgumentException("elementId is required.");
-
-        state.SetRoot(state.GetElement(elementId));
+        state.SetRoot(element);
         return null;
     }
 

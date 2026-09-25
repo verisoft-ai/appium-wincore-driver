@@ -7,22 +7,13 @@ namespace WincoreServer.Commands;
 
 public static class ElementCommands
 {
-    public static object? GetProperty(SessionState state, JsonElement? parameters)
-    {
-        var p = parameters ?? throw new ArgumentException("Parameters required.");
-        var elementId = p.GetProperty("elementId").GetString()
-            ?? throw new ArgumentException("elementId is required.");
-        var propertyName = p.GetProperty("property").GetString()
+    public static string ReadPropertyName(JsonElement parameters) =>
+        parameters.GetProperty("property").GetString()
             ?? throw new ArgumentException("property is required.");
 
-        // A tree-provider element (Java agent, .NET bridge): the provider owns the
-        // UIA-property-name mapping and any per-property freshness re-fetch.
-        if (state.Providers.TryResolve(elementId, out var provider))
-        {
-            return provider.GetProperty(elementId, propertyName);
-        }
-
-        var element = state.GetElement(elementId);
+    public static object? GetProperty(SessionState state, IUIAutomationElement element, JsonElement parameters)
+    {
+        var propertyName = ReadPropertyName(parameters);
 
         // Special case: RuntimeId returns dot-joined string
         if (propertyName.Equals("RuntimeId", StringComparison.OrdinalIgnoreCase))
@@ -124,31 +115,14 @@ public static class ElementCommands
         };
     }
 
-    public static object? GetTagName(SessionState state, JsonElement? parameters)
+    public static object? GetTagName(SessionState state, IUIAutomationElement element, JsonElement parameters)
     {
-        var p = parameters ?? throw new ArgumentException("Parameters required.");
-        var elementId = p.GetProperty("elementId").GetString()
-            ?? throw new ArgumentException("elementId is required.");
-
-        if (state.Providers.TryResolve(elementId, out var provider))
-            return provider.GetTagName(elementId);
-
-        var element = state.GetElement(elementId);
         var ctId = element.CurrentControlType;
         return ConditionBuilder.ControlTypeNameById.TryGetValue(ctId, out var name) ? name : ctId.ToString();
     }
 
-    public static object? GetText(SessionState state, JsonElement? parameters)
+    public static object? GetText(SessionState state, IUIAutomationElement element, JsonElement parameters)
     {
-        var p = parameters ?? throw new ArgumentException("Parameters required.");
-        var elementId = p.GetProperty("elementId").GetString()
-            ?? throw new ArgumentException("elementId is required.");
-
-        if (state.Providers.TryResolve(elementId, out var provider))
-            return provider.GetText(elementId);
-
-        var element = state.GetElement(elementId);
-
         // Prefer TextPattern.DocumentRange.GetText.
         try
         {
@@ -176,16 +150,8 @@ public static class ElementCommands
         return element.get_CurrentName();
     }
 
-    public static object? GetRect(SessionState state, JsonElement? parameters)
+    public static object? GetRect(SessionState state, IUIAutomationElement element, JsonElement parameters)
     {
-        var p = parameters ?? throw new ArgumentException("Parameters required.");
-        var elementId = p.GetProperty("elementId").GetString()
-            ?? throw new ArgumentException("elementId is required.");
-
-        if (state.Providers.TryResolve(elementId, out var provider))
-            return provider.GetRect(elementId);
-
-        var element = state.GetElement(elementId);
         var rect = element.CurrentBoundingRectangle;
 
         return new
@@ -215,37 +181,18 @@ public static class ElementCommands
         };
     }
 
-    public static object? SetFocus(SessionState state, JsonElement? parameters)
+    public static object? SetFocus(SessionState state, IUIAutomationElement element, JsonElement parameters)
     {
-        var p = parameters ?? throw new ArgumentException("Parameters required.");
-        var elementId = p.GetProperty("elementId").GetString()
-            ?? throw new ArgumentException("elementId is required.");
-
-        if (state.Providers.TryResolve(elementId, out var provider))
-        {
-            provider.RequestFocus(elementId);
-            return null;
-        }
-
-        var element = state.GetElement(elementId);
         element.SetFocus();
         return null;
     }
 
-    public static object? SetValue(SessionState state, JsonElement? parameters)
+    public static string ReadValue(JsonElement parameters) =>
+        parameters.GetProperty("value").GetString() ?? "";
+
+    public static object? SetValue(SessionState state, IUIAutomationElement element, JsonElement parameters)
     {
-        var p = parameters ?? throw new ArgumentException("Parameters required.");
-        var elementId = p.GetProperty("elementId").GetString()
-            ?? throw new ArgumentException("elementId is required.");
-        var value = p.GetProperty("value").GetString() ?? "";
-
-        if (state.Providers.TryResolve(elementId, out var provider))
-        {
-            provider.SetValue(elementId, value);
-            return null;
-        }
-
-        var element = state.GetElement(elementId);
+        var value = ReadValue(parameters);
         if (element.GetCurrentPattern(UIA.ValuePatternId) is IUIAutomationValuePattern vp)
         {
             vp.SetValue(value);
@@ -254,16 +201,8 @@ public static class ElementCommands
         throw new InvalidOperationException("Element does not support ValuePattern.");
     }
 
-    public static object? GetValue(SessionState state, JsonElement? parameters)
+    public static object? GetValue(SessionState state, IUIAutomationElement element, JsonElement parameters)
     {
-        var p = parameters ?? throw new ArgumentException("Parameters required.");
-        var elementId = p.GetProperty("elementId").GetString()
-            ?? throw new ArgumentException("elementId is required.");
-
-        if (state.Providers.TryResolve(elementId, out var provider))
-            return provider.GetText(elementId);
-
-        var element = state.GetElement(elementId);
         if (element.GetCurrentPattern(UIA.ValuePatternId) is IUIAutomationValuePattern vp)
         {
             return vp.get_CurrentValue();
