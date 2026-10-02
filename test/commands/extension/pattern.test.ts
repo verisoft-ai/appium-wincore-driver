@@ -73,10 +73,11 @@ describe('pattern commands', () => {
         expect(driver.sendCommand).not.toHaveBeenCalledWith('setFocus', expect.anything());
     });
 
-    it('patternExpand falls back to ALT+Down when expandElement throws', async () => {
+    it('patternExpand falls back to ALT+Down for a ComboBox when expandElement throws', async () => {
         const driver = createMockDriver() as any;
         driver.sendCommand.mockImplementation(async (method: string, args: any) => {
             if (method === 'expandElement') {throw new Error('does not support ExpandCollapsePattern');}
+            if (method === 'getProperty' && args.property === 'ControlType') {return 'ComboBox';}
             if (method === 'getProperty' && args.property === 'ExpandCollapseState') {return 'Expanded';}
             if (method === 'getProperty' && args.property === 'HasKeyboardFocus') {return true;}
             return null;
@@ -103,6 +104,7 @@ describe('pattern commands', () => {
         const driver = createMockDriver() as any;
         driver.sendCommand.mockImplementation(async (method: string, args: any) => {
             if (method === 'expandElement') {throw new Error('does not support ExpandCollapsePattern');}
+            if (method === 'getProperty' && args.property === 'ControlType') {return 'ComboBox';}
             if (method === 'getProperty' && args.property === 'ExpandCollapseState') {return 'Expanded';}
             if (method === 'getProperty' && args.property === 'HasKeyboardFocus') {return false;}
             if (method === 'getProperty' && args.property === 'ClickablePoint') {return { x: 10, y: 20 };}
@@ -136,10 +138,11 @@ describe('pattern commands', () => {
         expect(driver.sendCommand).not.toHaveBeenCalledWith('setFocus', expect.anything());
     });
 
-    it('patternCollapse falls back to ALT+Down when collapseElement throws', async () => {
+    it('patternCollapse falls back to ALT+Down for a ComboBox when collapseElement throws', async () => {
         const driver = createMockDriver() as any;
         driver.sendCommand.mockImplementation(async (method: string, args: any) => {
             if (method === 'collapseElement') {throw new Error('does not support ExpandCollapsePattern');}
+            if (method === 'getProperty' && args.property === 'ControlType') {return 'ComboBox';}
             if (method === 'getProperty' && args.property === 'ExpandCollapseState') {return 'Collapsed';}
             if (method === 'getProperty' && args.property === 'HasKeyboardFocus') {return true;}
             return null;
@@ -166,6 +169,7 @@ describe('pattern commands', () => {
         const driver = createMockDriver() as any;
         driver.sendCommand.mockImplementation(async (method: string, args: any) => {
             if (method === 'collapseElement') {throw new Error('does not support ExpandCollapsePattern');}
+            if (method === 'getProperty' && args.property === 'ControlType') {return 'ComboBox';}
             if (method === 'getProperty' && args.property === 'ExpandCollapseState') {return 'Collapsed';}
             if (method === 'getProperty' && args.property === 'HasKeyboardFocus') {return false;}
             if (method === 'getProperty' && args.property === 'ClickablePoint') {return { x: 10, y: 20 };}
@@ -202,6 +206,22 @@ describe('pattern commands', () => {
             return null;
         });
         await expect(fn.call(driver, MOCK_ELEMENT)).rejects.toBeInstanceOf(errors.InvalidElementStateError);
+        expect(driver.sendCommand).not.toHaveBeenCalledWith('setFocus', expect.anything());
+    });
+
+    // An element with no expand/collapse at all (PatternNotSupported) must surface too —
+    // ALT+Down to a button or a tree leaf would silently "succeed".
+    it.each([
+        { name: 'patternExpand', fn: patternExpand, method: 'expandElement' },
+        { name: 'patternCollapse', fn: patternCollapse, method: 'collapseElement' },
+    ])('$name rethrows PatternNotSupported for a non-ComboBox without sending ALT+Down', async ({ fn, method }) => {
+        const driver = createMockDriver() as any;
+        driver.sendCommand.mockImplementation(async (m: string, args: any) => {
+            if (m === method) {throw new errors.UnknownError('PatternNotSupported: collapse is not supported for JButton');}
+            if (m === 'getProperty' && args.property === 'ControlType') {return 'Button';}
+            return null;
+        });
+        await expect(fn.call(driver, MOCK_ELEMENT)).rejects.toThrow(/PatternNotSupported/);
         expect(driver.sendCommand).not.toHaveBeenCalledWith('setFocus', expect.anything());
     });
 

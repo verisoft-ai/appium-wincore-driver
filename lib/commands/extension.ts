@@ -257,18 +257,14 @@ async function waitForCollapsed(this: AppiumWincoreDriver, elementId: string): P
     return true;
 }
 
-// The server raises InvalidElementState when a verified expand/collapse left a reported
-// state unchanged (e.g. an MSAA grid group row that never opens). ALT+Down is a combo-box
-// keyboard trick: sending it to a grid row or tree item does something unrelated and
-// masks the failure, so only a ComboBox still gets the keyboard fallback; anything else
-// surfaces the error. An unreadable control type also surfaces it — never send keys blind.
-// The server only raises InvalidElementState for MSAA-backed elements (real patterns are
-// trusted), so for a ComboBox this means its MSAA default action did not open it within the
-// verification budget; ALT+Down is the remaining lever.
-async function shouldSurfaceStateError(this: AppiumWincoreDriver, err: unknown, elementId: string): Promise<boolean> {
-    if (!(err instanceof errors.InvalidElementStateError)) {
-        return false;
-    }
+// ALT+Down is a combo-box keyboard trick: sending it to a grid row, tree item or button
+// does something unrelated and masks the failure, so only a ComboBox gets the keyboard
+// fallback; anything else surfaces the error. That covers both PatternNotSupported (the
+// element has no expand/collapse at all — e.g. a button or a Java tree leaf) and the
+// server's InvalidElementState (a verified MSAA action that had no effect; real patterns
+// are trusted). An unreadable control type also surfaces it — never send keys blind. For
+// a ComboBox, ALT+Down is the remaining lever when the pattern is missing or didn't open it.
+async function shouldSurfaceError(this: AppiumWincoreDriver, elementId: string): Promise<boolean> {
     try {
         const controlType = await this.sendCommand('getProperty', { elementId, property: 'ControlType' });
         return controlType !== 'ComboBox';
@@ -299,7 +295,7 @@ export async function patternExpand(this: AppiumWincoreDriver, element: Element)
         }
         this.log.info('[patternExpand] expandElement reported success but ExpandCollapseState never became Expanded, falling back to ALT+Down.');
     } catch (err: any) {
-        if (await shouldSurfaceStateError.call(this, err, elementId)) {
+        if (await shouldSurfaceError.call(this, elementId)) {
             throw err;
         }
         const msg = String(err?.message ?? err);
@@ -328,7 +324,7 @@ export async function patternCollapse(this: AppiumWincoreDriver, element: Elemen
         }
         this.log.info('[patternCollapse] collapseElement reported success but ExpandCollapseState never left Expanded, falling back to ALT+Down.');
     } catch (err: any) {
-        if (await shouldSurfaceStateError.call(this, err, elementId)) {
+        if (await shouldSurfaceError.call(this, elementId)) {
             throw err;
         }
         const msg = String(err?.message ?? err);
